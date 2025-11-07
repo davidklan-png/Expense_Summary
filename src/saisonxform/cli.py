@@ -4,6 +4,7 @@ Provides the main entry point and CLI commands for the application.
 Uses Typer for robust CLI architecture with subcommands.
 """
 
+import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -12,6 +13,30 @@ from typing import Optional
 import typer
 
 from .config import Config
+
+
+def is_inside_git_repo(path: Path) -> bool:
+    """Check if a path is inside a git repository.
+
+    Args:
+        path: Path to check
+
+    Returns:
+        True if path is inside a git repository, False otherwise
+    """
+    try:
+        # Run git rev-parse --is-inside-work-tree in the path's directory
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=path if path.is_dir() else path.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "true"
+    except Exception:
+        return False
+
 
 # Create Typer app
 app = typer.Typer(
@@ -87,7 +112,7 @@ def run(
         has_retry_marker,
     )
     from saisonxform.reporting import generate_html_report
-    from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
+    from saisonxform.selectors import estimate_attendee_count, sample_attendee_ids
 
     # Load configuration with overrides
     config = Config(config_file=config_file)
@@ -126,7 +151,26 @@ def run(
             typer.echo(f"  • {log_line}")
         typer.echo()
 
-    # TODO: Validate paths are not inside git repo (security requirement)
+    # Validate paths are not inside git repo (security requirement)
+    paths_to_validate = [
+        ("Input", config.input_dir),
+        ("Reference", config.reference_dir),
+        ("Output", config.output_dir),
+        ("Archive", config.archive_dir),
+    ]
+
+    git_paths = []
+    for name, path in paths_to_validate:
+        if path.exists() and is_inside_git_repo(path):
+            git_paths.append(f"{name}: {path}")
+
+    if git_paths:
+        typer.echo("\nERROR: The following directories are inside a git repository:")
+        for git_path in git_paths:
+            typer.echo(f"  • {git_path}")
+        typer.echo("\nFor security, data directories must be outside of git repositories.")
+        typer.echo("Use --input, --reference, --output, or --archive to specify different paths.")
+        raise typer.Exit(code=1)
 
     # Load attendee reference
     namelist_path = config.reference_dir / "NameList.csv"
@@ -225,59 +269,74 @@ def run(
                 typer.echo("  • SKIPPED: Empty file")
                 continue
 
-            # TODO Phase 4: Keep ALL rows, not just filtered ones
-            # Filter relevant transactions (temporarily - Phase 4 will fix this)
-            relevant_df = filter_relevant_transactions(df)
-
-            if verbose:
-                typer.echo(f"  • Found {len(relevant_df)} relevant transactions (会議費/接待費)")
-            else:
-                typer.echo(f"  • Relevant transactions: {len(relevant_df)}")
-
-            if len(relevant_df) == 0:
-                typer.echo("  • SKIPPED: No meeting/entertainment expenses found")
+            # Identify relevant transactions (meeting/entertainment expenses)
+            # Check for 備考 column
+            if "備考" not in df.columns:
+                typer.echo("  • SKIPPED: Missing required column '備考'")
                 continue
 
-            # Process each relevant transaction
-            attendee_counts = []
-            id_assignments = []
+            # Create mask for relevant transactions (会議費/接待費)
+            relevant_mask = df["備考"].str.contains("会議費|接待費", na=False, regex=True)
+            relevant_count = relevant_mask.sum()
 
-            for _, row in relevant_df.iterrows():
-                # TODO Phase 5: Pass config parameters to estimation functions
-                # Estimate attendee count
-                amount = row.get("利用金額", 0)
-                count = estimate_attendee_count(amount)
-                attendee_counts.append(count)
+            if verbose:
+                typer.echo(f"  • Found {relevant_count} relevant transactions (会議費/接待費)")
+            else:
+                typer.echo(f"  • Relevant transactions: {relevant_count}")
 
-                # Sample attendee IDs
-                ids_dict = sample_attendee_ids(count=count, available_ids=available_ids, return_dict=True)
-                id_assignments.append(ids_dict)
-
-            # Add attendee columns to relevant transactions
-            relevant_df["出席者"] = attendee_counts
-
+            # Initialize attendee columns for ALL rows (blank by default)
+            df["出席者"] = ""
             for i in range(1, 9):
-                col_name = f"ID{i}"
-                relevant_df[col_name] = [assignment[col_name] for assignment in id_assignments]
+                df[f"ID{i}"] = ""
+
+            # Process only relevant transactions
+            if relevant_count > 0:
+                for idx in df[relevant_mask].index:
+                    # Estimate attendee count with config parameters
+                    amount = df.loc[idx, "利用金額"]
+                    count = estimate_attendee_count(
+                        amount, min_attendees=config.min_attendees, max_attendees=config.max_attendees,
+                    )
+                    df.loc[idx, "出席者"] = count
+
+                    # Sample attendee IDs with config weights
+                    # Extract weights from config (default: 90% ID '2', 10% ID '1')
+                    id_2_weight = config.primary_id_weights.get("2", 0.9)
+                    id_1_weight = config.primary_id_weights.get("1", 0.1)
+
+                    ids_dict = sample_attendee_ids(
+                        count=count,
+                        available_ids=available_ids,
+                        id_2_weight=id_2_weight,
+                        id_1_weight=id_1_weight,
+                        return_dict=True,
+                    )
+                    for i in range(1, 9):
+                        col_name = f"ID{i}"
+                        df.loc[idx, col_name] = ids_dict[col_name]
 
             # Generate output files
             output_stem = csv_file.stem
             csv_output = config.output_dir / f"{output_stem}.csv"
             html_output = config.output_dir / f"{output_stem}.html"
 
-            # Write processed CSV
-            write_csv_utf8_bom(relevant_df, csv_output, handle_duplicates=True)
+            # Write processed CSV (now contains ALL rows)
+            write_csv_utf8_bom(df, csv_output, handle_duplicates=True)
             typer.echo(f"  • CSV output: {csv_output.name}")
 
-            # Generate HTML report
-            html_path = generate_html_report(
-                transactions=relevant_df,
-                attendee_reference=attendee_ref,
-                output_path=html_output,
-                source_filename=csv_file.name,
-                handle_duplicates=True,
-            )
-            typer.echo(f"  • HTML report: {html_path.name}")
+            # Generate HTML report (only for relevant transactions with attendees)
+            if relevant_count > 0:
+                relevant_transactions = df[relevant_mask].copy()
+                html_path = generate_html_report(
+                    transactions=relevant_transactions,
+                    attendee_reference=attendee_ref,
+                    output_path=html_output,
+                    source_filename=csv_file.name,
+                    handle_duplicates=True,
+                )
+                typer.echo(f"  • HTML report: {html_path.name}")
+            else:
+                typer.echo("  • HTML report: (skipped - no relevant transactions)")
 
             # Archive file after successful processing
             if file_month:

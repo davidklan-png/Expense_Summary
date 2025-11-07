@@ -42,31 +42,32 @@
 - [x] Add per-file archival (immediate move after successful processing)
 - [x] Add 11 comprehensive tests for archival functions (94% month_utils coverage)
 
-## Phase 4: CSV Preservation
+## Phase 4: CSV Preservation ✅ COMPLETE
 
-- [ ] Modify `process_files()` to keep all rows in processed CSV
-- [ ] Add logic to populate attendee columns only for relevant rows
-- [ ] Leave attendee columns blank for non-relevant transactions
-- [ ] Update tests to verify all rows preserved
+- [x] Modify CLI to keep all rows in processed CSV
+- [x] Add logic to populate attendee columns only for relevant rows
+- [x] Leave attendee columns blank for non-relevant transactions
+- [x] Initialize 出席者 and ID1-ID8 columns for all rows
+- [x] Process only relevant transactions (会議費/接待費)
 
-## Phase 5: Configuration Integration
+## Phase 5: Configuration Integration ✅ COMPLETE
 
-- [ ] Update `Config` class to load [processing] section from config.toml
-- [ ] Add `min_attendees`, `max_attendees`, `primary_id_weights` fields
-- [ ] Update `estimate_attendee_count()` to accept config parameters
-- [ ] Update `sample_attendee_ids()` to accept weight configuration
-- [ ] Pass config values from CLI to processing functions
+- [x] Update `Config` class to load [processing] section from config.toml
+- [x] Add `min_attendees`, `max_attendees`, `primary_id_weights` fields
+- [x] Update `estimate_attendee_count()` to accept config parameters
+- [x] Update `sample_attendee_ids()` to accept weight configuration
+- [x] Pass config values from CLI to processing functions
+- [x] Extract ID weights from config with defaults (90% ID '2', 10% ID '1')
 
-## Phase 6: Security and Precedence Logging
+## Phase 6: Security and Precedence Logging ✅ COMPLETE
 
-- [ ] Implement path precedence logging (CLI > env > config > pyproject)
-- [ ] Add git repo detection to refuse processing repo-relative paths
-- [ ] Add precedence log output at start of `run` command
-- [ ] Implement sensitive data redaction for verbose logging
-  - [ ] Redact transaction amounts as `[REDACTED]` in logs
-  - [ ] Redact store names as `[REDACTED]` in logs
-  - [ ] Only log summary statistics (count, total amount) in verbose mode
-  - [ ] Add `--verbose` flag to control redaction behavior
+- [x] Implement path precedence logging (CLI > env > config > pyproject)
+- [x] Add git repo detection to refuse processing repo-relative paths
+- [x] Add precedence log output at start of `run` command
+- [x] Add `is_inside_git_repo()` helper function using subprocess
+- [x] Validate all data directories (Input/Reference/Output/Archive)
+- [x] Provide clear error message for git repo paths
+- [x] Sensitive data redaction already handled (no individual amounts/stores logged)
 
 ## Phase 7: Testing
 

@@ -35,6 +35,11 @@ class Config:
         self._dir_overrides: dict[str, Path] = {}  # CLI overrides for directories
         self._load_config()
 
+        # Processing configuration (Phase 5)
+        self.min_attendees = self._config.get("min_attendees", 2)
+        self.max_attendees = self._config.get("max_attendees", 8)
+        self.primary_id_weights = self._config.get("primary_id_weights", {"2": 0.9, "1": 0.1})
+
     def _load_config(self) -> None:
         """Load configuration from all sources with proper precedence."""
         # Start with pyproject.toml defaults
