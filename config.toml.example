@@ -1,0 +1,33 @@
+# Saison Transform Configuration Example
+# Copy this file to config.toml and adjust paths as needed
+
+[paths]
+# Directory paths (relative to project root or absolute)
+# Default: ../Input, ../Reference, ../Output, ../Archive
+input_dir = "../Input"
+reference_dir = "../Reference"
+output_dir = "../Output"
+archive_dir = "../Archive"
+
+[processing]
+# Attendee count estimation range
+# Default: Random between 2-8 attendees per transaction
+min_attendees = 2
+max_attendees = 8
+
+# Primary ID selection weights (must sum to 1.0)
+# Default: 90% probability for ID '2', 10% for ID '1'
+# The primary ID is selected first, then remaining slots filled randomly
+[processing.primary_id_weights]
+"2" = 0.9  # 90% chance
+"1" = 0.1  # 10% chance
+
+# Alternative: Equal weights for IDs '1' and '2'
+# [processing.primary_id_weights]
+# "1" = 0.5
+# "2" = 0.5
+
+# Alternative: Prefer ID '1' over ID '2'
+# [processing.primary_id_weights]
+# "1" = 0.7
+# "2" = 0.3

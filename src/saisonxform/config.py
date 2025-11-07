@@ -9,10 +9,9 @@ All paths are resolved relative to the project root for relative paths.
 """
 
 import os
+import tomllib
 from pathlib import Path
 from typing import Any, Optional
-
-import tomllib
 
 
 class Config:

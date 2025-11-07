@@ -2,6 +2,7 @@
 
 import pandas as pd
 import pytest
+
 from saisonxform.reporting import generate_html_report, get_unique_attendees, prepare_report_context
 
 

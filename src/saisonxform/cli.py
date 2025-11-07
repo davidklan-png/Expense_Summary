@@ -295,7 +295,9 @@ def run(
                     # Estimate attendee count with config parameters
                     amount = df.loc[idx, "利用金額"]
                     count = estimate_attendee_count(
-                        amount, min_attendees=config.min_attendees, max_attendees=config.max_attendees,
+                        amount,
+                        min_attendees=config.min_attendees,
+                        max_attendees=config.max_attendees,
                     )
                     df.loc[idx, "出席者"] = count
 

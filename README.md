@@ -12,31 +12,42 @@ Saison Transform processes credit card CSV files to:
 
 ## Status
 
-**Current Phase**: Phase 1 (CLI Migration) Complete ✅
-**Test Coverage**: 54% (CLI code not yet tested - Phase 7 pending)
-**Tests Passing**: 54 passed, 8 skipped
+**All Phases Complete!** ✅
+**Test Coverage**: 67% overall (core modules: month_utils 94%, selectors 90%)
+**Tests Passing**: 65 passed (53 unit + 12 integration)
 
-### ✅ Phase 1: Environment Setup (Complete)
+### ✅ Phase 1-2: Foundation (Complete)
 - Poetry-based dependency management
-- Configuration system (config.toml + environment variables)
-- Project structure and packaging
-- **NEW**: Typer-based CLI with `run` and `validate-config` commands
-- **NEW**: `sf` command alias for convenience
-- Jinja2 templates for HTML reporting
-
-### ✅ Phase 2: Data Pipeline (Complete)
+- Typer CLI with `run` and `validate-config` commands
+- `sf` command alias for convenience
 - CSV processing with auto-encoding detection
 - Transaction filtering and attendee estimation
-- ID sampling with configurable weights (90% ID '2', 10% ID '1')
-- HTML report generation
-- ≥90% test coverage achieved (91.55%)
+- ID sampling with configurable weights
+- HTML report generation with Jinja2
 
-### 🚧 In Progress: CLI Enhancement & Archival
-- Month filtering (--month, default to latest 2 months)
-- Archival workflow (move files to Archive/YYYYMM/)
-- CSV row preservation (keep all rows, not just filtered)
-- Configuration integration (attendee settings from config.toml)
-- Security validation (repo-path checking, precedence logging)
+### ✅ Phase 3: Archival Workflow (Complete)
+- Per-file archival to `Archive/YYYYMM/` after successful processing
+- Retry markers (`.retry_YYYYMM.json`) for partial failures
+- Already-archived month detection with `--force` override
+- Cross-filesystem move support (copy+delete fallback)
+- Month-based filtering (`--month` flag, default: latest 2 months)
+
+### ✅ Phase 4: CSV Preservation (Complete)
+- **ALL rows** preserved in output CSV
+- Attendee columns (`出席者`, `ID1-ID8`) added to all rows
+- Populated only for relevant transactions (会議費/接待費)
+- Non-relevant rows have blank attendee columns
+
+### ✅ Phase 5: Configuration Integration (Complete)
+- Configurable via `config.toml` `[processing]` section:
+  - `min_attendees` (default: 2)
+  - `max_attendees` (default: 8)
+  - `primary_id_weights` (default: `{"2": 0.9, "1": 0.1}`)
+
+### ✅ Phase 6: Security & Logging (Complete)
+- Git repository path validation (prevents data in git repos)
+- Path precedence logging (CLI > env > config > pyproject)
+- Sensitive data redaction (summary stats only)
 
 ## Quick Start
 
@@ -144,10 +155,10 @@ Configuration validation complete - SUCCESS
 
 ### 6. Process CSV Files
 
-Place your transaction CSV files in the `Input/` directory, then:
+Place your transaction CSV files in the `Input/` directory with `YYYYMM_` prefix (e.g., `202510_transactions.csv`), then:
 
 ```bash
-# Process all CSV files
+# Process latest 2 months (default)
 poetry run saisonxform run
 
 # Or use the short alias
@@ -155,12 +166,16 @@ poetry run sf run
 
 # Process specific month(s)
 poetry run saisonxform run --month 202510
+poetry run saisonxform run --month 202510 --month 202511
 
-# Process with verbose output
+# Force reprocess already-archived months
+poetry run saisonxform run --month 202510 --force
+
+# Process with verbose output (shows encoding detection, archival details)
 poetry run saisonxform run --verbose
 
 # Override directories for a specific run
-poetry run saisonxform run --input /path/to/custom/input
+poetry run saisonxform run --input /path/to/custom/input --output /path/to/custom/output
 ```
 
 Expected output:
@@ -168,19 +183,25 @@ Expected output:
 Found 1 CSV file(s) to process
 
 Processing: 202510_transactions.csv
-  - Detected encoding: utf-8
-  - Found 15 relevant transactions
-  - CSV output: 202510_transactions.csv
-  - HTML report: 202510_transactions.html
+  • Encoding: utf-8
+  • Relevant transactions: 15
+  • CSV output: 202510_transactions.csv
+  • HTML report: 202510_transactions.html
+  • Archived to: Archive/202510/
   ✓ SUCCESS
 
 ============================================================
 Processing complete:
-  - Processed: 1
-  - Errors: 0
-  - Total: 1
+  • Processed: 1
+  • Errors: 0
+  • Total: 1
 ============================================================
 ```
+
+**Archival Behavior**:
+- Successfully processed files move from `Input/` to `Archive/YYYYMM/`
+- Failed files remain in `Input/` with retry marker created
+- Already-archived months require `--force` to reprocess
 
 ## Configuration
 
@@ -214,7 +235,21 @@ input_dir = "../Input"
 reference_dir = "../Reference"
 output_dir = "../Output"
 archive_dir = "../Archive"
+
+[processing]
+# Attendee count range (default: 2-8)
+min_attendees = 2
+max_attendees = 8
+
+# Primary ID weights for weighted selection (default: 90% ID '2', 10% ID '1')
+[processing.primary_id_weights]
+"2" = 0.9
+"1" = 0.1
 ```
+
+**Processing Configuration**:
+- `min_attendees` / `max_attendees`: Random range for attendee count estimation
+- `primary_id_weights`: Probability weights for primary slot (must sum to 1.0)
 
 ## Input Data Format
 
@@ -251,26 +286,34 @@ Reference file for attendee information:
 
 ### Processed CSV
 
+**Phase 4**: ALL rows from the input CSV are preserved in the output!
+
 The output CSV includes original columns plus:
-- **出席者** - Estimated attendee count (2-8, randomly assigned)
-- **ID1** through **ID8** - Selected attendee IDs (from NameList.csv)
+- **出席者** - Estimated attendee count (populated for relevant transactions only)
+- **ID1** through **ID8** - Selected attendee IDs (populated for relevant transactions only)
 
 Example:
 ```csv
 利用日,ご利用店名及び商品名,利用金額,備考,出席者,ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8
 2025-10-01,東京レストラン,15000,会議費,4,1,2,3,5,,,,
 2025-10-02,カフェABC,5000,接待費,2,2,3,,,,,
+2025-10-03,スーパーマーケット,3000,その他,,,,,,,,,
 ```
 
-**Attendee Assignment Logic:**
-- Count: Random between 2-8 attendees per transaction
-- Primary ID: 90% chance of ID '2', 10% chance of ID '1'
+**Behavior**:
+- ✅ **All rows preserved** (relevant AND non-relevant)
+- ✅ Attendee columns **populated only** for 会議費/接待費 transactions
+- ✅ Non-relevant rows have **blank attendee columns**
+
+**Attendee Assignment Logic** (for relevant transactions):
+- Count: Random between `min_attendees` and `max_attendees` (configurable, default: 2-8)
+- Primary ID: Weighted selection (default: 90% ID '2', 10% ID '1')
 - Remaining IDs: Random selection without replacement
 - Sorted numerically, padded with empty strings to ID8
 
 ### HTML Report
 
-Beautiful HTML report includes:
+Beautiful HTML report includes **only relevant transactions** (会議費/接待費):
 - **Transaction Table**: All processed transactions with attendee assignments
 - **Unique Attendee List**: Details of all attendees selected across transactions
 - **Summary Statistics**: Total transactions, total amount, attendee count

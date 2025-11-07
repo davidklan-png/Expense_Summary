@@ -1,11 +1,13 @@
 """Integration tests for end-to-end pipeline."""
-# TODO: Update tests to use new Typer CLI structure
-# from saisonxform.cli import process_files
-import sys
 
 import pandas as pd
 import pytest
+from typer.testing import CliRunner
+
+from saisonxform.cli import app
 from saisonxform.config import Config
+
+runner = CliRunner()
 
 
 @pytest.fixture
@@ -86,14 +88,13 @@ class TestConfigurationManagement:
 class TestEndToEndPipeline:
     """Test complete processing pipeline."""
 
-    @pytest.mark.skip(reason="TODO: Update to use new Typer CLI structure - process_files() no longer exists")
-    def test_process_files_success(self, integration_env, capsys):
+    def test_process_files_success(self, integration_env):
         """Should successfully process CSV files end-to-end."""
-        # Run process_files
-        exit_code = process_files()
+        # Run CLI command
+        result = runner.invoke(app, ["run", "--force"])
 
         # Check exit code
-        assert exit_code == 0
+        assert result.exit_code == 0
 
         # Verify output files were created
         output_dir = integration_env["output_dir"]
@@ -104,7 +105,7 @@ class TestEndToEndPipeline:
         assert len(csv_files) >= 1, "Should create processed CSV"
         assert len(html_files) >= 1, "Should create HTML report"
 
-        # Verify CSV content
+        # Verify CSV content (Phase 4: ALL rows preserved)
         csv_file = csv_files[0]
         df = pd.read_csv(csv_file, encoding="utf-8-sig")
 
@@ -112,8 +113,19 @@ class TestEndToEndPipeline:
         assert "ID1" in df.columns
         assert "ID8" in df.columns
 
-        # Should only have meeting/entertainment expenses
-        assert len(df) == 3  # 2 会議費 + 1 接待費
+        # Should have ALL rows (3 relevant + 1 non-relevant = 4 total)
+        assert len(df) == 4
+
+        # Check relevant rows have attendee data
+        relevant_rows = df[df["備考"].str.contains("会議費|接待費", na=False)]
+        assert len(relevant_rows) == 3
+        assert all(relevant_rows["出席者"].notna())  # Has attendee count
+
+        # Check non-relevant row has blank attendee data
+        non_relevant = df[~df["備考"].str.contains("会議費|接待費", na=False)]
+        assert len(non_relevant) == 1
+        # Empty strings are read as NaN by pandas
+        assert all(non_relevant["出席者"].isna() | (non_relevant["出席者"] == ""))
 
         # Verify HTML content
         html_file = html_files[0]
@@ -123,24 +135,20 @@ class TestEndToEndPipeline:
         assert "カフェABC" in html_content
         assert "山田太郎" in html_content or "佐藤花子" in html_content
 
-    @pytest.mark.skip(reason="TODO: Update to use new Typer CLI structure - process_files() no longer exists")
-    def test_process_files_empty_input(self, integration_env, capsys):
+    def test_process_files_empty_input(self, integration_env):
         """Should handle empty input directory gracefully."""
         # Remove CSV files
         for csv_file in integration_env["input_dir"].glob("*.csv"):
             csv_file.unlink()
 
-        exit_code = process_files()
+        result = runner.invoke(app, ["run"])
 
         # Should succeed with no files to process
-        assert exit_code == 0
+        assert result.exit_code == 0
+        assert "No CSV files found" in result.stdout
 
-        captured = capsys.readouterr()
-        assert "No CSV files found" in captured.out
-
-    @pytest.mark.skip(reason="TODO: Update to use new Typer CLI structure - process_files() no longer exists")
     def test_process_files_no_relevant_transactions(self, integration_env):
-        """Should skip files with no meeting/entertainment expenses."""
+        """Should process files with no meeting/entertainment expenses (Phase 4: keep all rows)."""
         # Create CSV with only other expenses
         input_dir = integration_env["input_dir"]
 
@@ -158,82 +166,72 @@ class TestEndToEndPipeline:
             encoding="utf-8",
         )
 
-        exit_code = process_files()
+        result = runner.invoke(app, ["run", "--force"])
 
-        # Should succeed but no output files
-        assert exit_code == 0
+        # Should succeed
+        assert result.exit_code == 0
 
         output_dir = integration_env["output_dir"]
         csv_files = list(output_dir.glob("*.csv"))
         html_files = list(output_dir.glob("*.html"))
 
-        # Should not create output for files with no relevant transactions
-        assert len(csv_files) == 0
+        # Phase 4: Should create CSV with all rows (attendee columns blank)
+        assert len(csv_files) == 1
+        df = pd.read_csv(csv_files[0], encoding="utf-8-sig")
+        assert len(df) == 2  # Both rows preserved
+        # Empty strings are read as NaN by pandas
+        assert all(df["出席者"].isna() | (df["出席者"] == ""))  # All blank
+
+        # No HTML report (no relevant transactions)
         assert len(html_files) == 0
 
-    @pytest.mark.skip(reason="TODO: Update to use new Typer CLI structure - process_files() no longer exists")
     def test_process_files_missing_namelist(self, integration_env):
         """Should error if NameList.csv is missing."""
         # Remove NameList.csv
         namelist = integration_env["reference_dir"] / "NameList.csv"
         namelist.unlink()
 
-        exit_code = process_files()
+        result = runner.invoke(app, ["run"])
 
         # Should fail
-        assert exit_code == 1
+        assert result.exit_code == 1
+        assert "NameList.csv not found" in result.stdout
 
 
 class TestCLICommands:
     """Test CLI command parsing."""
 
-    @pytest.mark.skip(reason="TODO: Update to use Typer testing utilities (CliRunner) instead of sys.argv mocking")
-    def test_validate_config_command(self, integration_env, monkeypatch, capsys):
+    def test_validate_config_command(self, integration_env):
         """Should execute validate-config command."""
-        from saisonxform.cli import main
+        result = runner.invoke(app, ["validate-config"])
 
-        monkeypatch.setattr(sys, "argv", ["saisonxform", "validate-config"])
+        assert result.exit_code == 0
+        assert "Configuration validation complete" in result.stdout or "SUCCESS" in result.stdout
 
-        exit_code = main()
+    def test_run_with_month_flag(self, integration_env):
+        """Should process specific month with --month flag."""
+        result = runner.invoke(app, ["run", "--month", "202510", "--force"])
 
-        assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "Configuration validation complete" in captured.out or "SUCCESS" in captured.out
+        assert result.exit_code == 0
+        assert "202510" in result.stdout or "Found" in result.stdout
 
-    @pytest.mark.skip(reason="TODO: Update to use Typer testing utilities (CliRunner) instead of sys.argv mocking")
-    def test_process_command(self, integration_env, monkeypatch):
-        """Should execute process command."""
-        from saisonxform.cli import main
+    def test_run_with_verbose_flag(self, integration_env):
+        """Should show verbose output with --verbose flag."""
+        result = runner.invoke(app, ["run", "--verbose", "--force"])
 
-        monkeypatch.setattr(sys, "argv", ["saisonxform", "process"])
+        assert result.exit_code == 0
+        assert "Configuration Precedence" in result.stdout or "Detected encoding" in result.stdout
 
-        exit_code = main()
+    def test_version_flag(self):
+        """Should show version with --version flag."""
+        result = runner.invoke(app, ["--version"])
 
-        assert exit_code == 0
+        assert result.exit_code == 0
+        assert "saisonxform version" in result.stdout
 
-    @pytest.mark.skip(reason="TODO: Update to use Typer testing utilities (CliRunner) instead of sys.argv mocking")
-    def test_unknown_command(self, monkeypatch, capsys):
-        """Should handle unknown commands."""
-        from saisonxform.cli import main
+    def test_help_command(self):
+        """Should show help message."""
+        result = runner.invoke(app, ["--help"])
 
-        monkeypatch.setattr(sys, "argv", ["saisonxform", "unknown"])
-
-        exit_code = main()
-
-        captured = capsys.readouterr()
-        assert "Unknown command" in captured.out
-
-    @pytest.mark.skip(reason="TODO: Update to use Typer testing utilities (CliRunner) instead of sys.argv mocking")
-    def test_default_usage(self, monkeypatch, capsys):
-        """Should show usage when no command given."""
-        from saisonxform.cli import main
-
-        monkeypatch.setattr(sys, "argv", ["saisonxform"])
-
-        exit_code = main()
-
-        assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "Usage:" in captured.out
-        assert "validate-config" in captured.out
-        assert "process" in captured.out
+        assert result.exit_code == 0
+        assert "Usage:" in result.stdout or "Commands:" in result.stdout
