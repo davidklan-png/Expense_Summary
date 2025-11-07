@@ -13,8 +13,8 @@ Saison Transform processes credit card CSV files to:
 ## Status
 
 **Current Phase**: Phase 1 (CLI Migration) Complete ✅
-**Test Coverage**: 91.55%
-**Tests Passing**: 62/62
+**Test Coverage**: 54% (CLI code not yet tested - Phase 7 pending)
+**Tests Passing**: 54 passed, 8 skipped
 
 ### ✅ Phase 1: Environment Setup (Complete)
 - Poetry-based dependency management
@@ -274,6 +274,68 @@ Beautiful HTML report includes:
 - **Transaction Table**: All processed transactions with attendee assignments
 - **Unique Attendee List**: Details of all attendees selected across transactions
 - **Summary Statistics**: Total transactions, total amount, attendee count
+
+## Code Quality & CI/CD
+
+This project enforces strict code quality standards through automated tooling:
+
+### Quick Commands
+
+```bash
+# Install pre-commit hooks (run once)
+make pre-commit-install
+
+# Format code (black + isort)
+make format
+
+# Run linter (ruff)
+make lint
+
+# Run all quality checks
+make qa
+
+# Simulate CI checks locally
+make ci
+```
+
+### Available Tools
+
+- **Black**: Code formatting (120 char line length)
+- **isort**: Import sorting
+- **Ruff**: Fast Python linter (replaces flake8, pylint, pyupgrade, etc.)
+- **mypy**: Static type checking
+- **bandit**: Security vulnerability scanner
+- **pytest**: Testing framework with coverage
+
+### Pre-commit Hooks
+
+Pre-commit hooks run automatically before each commit to ensure code quality:
+
+```bash
+# Install hooks
+poetry run pre-commit install
+
+# Run manually on all files
+poetry run pre-commit run --all-files
+```
+
+Hooks include: formatting, linting, type checking, security scanning, and commit message validation.
+
+### CI Pipeline
+
+GitHub Actions runs on all pushes and pull requests:
+- ✅ Code formatting (black, isort)
+- ✅ Linting (ruff)
+- ✅ Type checking (mypy)
+- ✅ Security scan (bandit)
+- ✅ Tests on Python 3.10, 3.11, 3.12, 3.13
+- ✅ Coverage reporting to Codecov
+
+See `.github/workflows/ci.yml` for full pipeline configuration.
+
+### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines, code style requirements, and PR submission process.
 
 ## Development
 

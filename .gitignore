@@ -70,6 +70,9 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
+# Ruff cache
+.ruff_cache/
+
 # Pyre type checker
 .pyre/
 

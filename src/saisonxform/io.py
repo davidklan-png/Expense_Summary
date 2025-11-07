@@ -1,17 +1,16 @@
 """CSV I/O operations with encoding detection and header parsing."""
 import warnings
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import chardet
 import pandas as pd
 
-
 # Required column names for transaction CSVs
-REQUIRED_COLUMNS = ['利用日', 'ご利用店名及び商品名', '利用金額', '備考']
+REQUIRED_COLUMNS = ["利用日", "ご利用店名及び商品名", "利用金額", "備考"]
 
 # Encoding fallback chain
-ENCODING_FALLBACKS = ['utf-8-sig', 'utf-8', 'cp932']
+ENCODING_FALLBACKS = ["utf-8-sig", "utf-8", "cp932"]
 
 # Confidence threshold for chardet
 CHARDET_CONFIDENCE_THRESHOLD = 0.6
@@ -33,22 +32,19 @@ def detect_encoding(file_path: Path) -> str:
         3. Fallback order: utf-8-sig → utf-8 → cp932
     """
     try:
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             raw_data = f.read()
 
         # Try chardet detection
         result = chardet.detect(raw_data)
-        encoding = result.get('encoding')
-        confidence = result.get('confidence', 0)
+        encoding = result.get("encoding")
+        confidence = result.get("confidence", 0)
 
         if encoding and confidence >= CHARDET_CONFIDENCE_THRESHOLD:
             return encoding
 
         # Low confidence or no detection - use fallback
-        warnings.warn(
-            f"Low confidence ({confidence:.2f}) for {file_path.name}, "
-            f"using fallback encoding chain"
-        )
+        warnings.warn(f"Low confidence ({confidence:.2f}) for {file_path.name}, " f"using fallback encoding chain")
 
     except Exception as e:
         warnings.warn(f"chardet failed for {file_path.name}: {e}, using fallback")
@@ -79,7 +75,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
 
         for enc in encodings_to_try:
             try:
-                with open(file_path, 'r', encoding=enc) as f:
+                with open(file_path, encoding=enc) as f:
                     for idx, line in enumerate(f):
                         if idx >= 10:  # Only scan first 10 rows
                             break
@@ -101,10 +97,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
         return None
 
 
-def read_csv_with_detection(
-    file_path: Path,
-    encoding: Optional[str] = None
-) -> Tuple[pd.DataFrame, str]:
+def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> tuple[pd.DataFrame, str]:
     """
     Read CSV file with automatic encoding detection and header parsing.
 
@@ -141,7 +134,7 @@ def read_csv_with_detection(
     for enc in encodings_to_try:
         try:
             # Check if file is empty
-            with open(file_path, 'r', encoding=enc) as f:
+            with open(file_path, encoding=enc) as f:
                 content = f.read()
                 if not content.strip():
                     warnings.warn(f"Empty file: {file_path.name}")
@@ -153,9 +146,7 @@ def read_csv_with_detection(
             # Check for required columns
             missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
             if missing_cols:
-                warnings.warn(
-                    f"Missing required columns in {file_path.name}: {missing_cols}"
-                )
+                warnings.warn(f"Missing required columns in {file_path.name}: {missing_cols}")
 
             return df, enc
 
@@ -165,18 +156,12 @@ def read_csv_with_detection(
 
     # All encodings failed
     if last_error:
-        raise ValueError(
-            f"Failed to read {file_path.name} with any encoding. Last error: {last_error}"
-        )
+        raise ValueError(f"Failed to read {file_path.name} with any encoding. Last error: {last_error}")
 
     return pd.DataFrame(), encoding
 
 
-def write_csv_utf8_bom(
-    df: pd.DataFrame,
-    file_path: Path,
-    handle_duplicates: bool = False
-) -> Path:
+def write_csv_utf8_bom(df: pd.DataFrame, file_path: Path, handle_duplicates: bool = False) -> Path:
     """
     Write DataFrame to CSV with UTF-8 BOM encoding.
 
@@ -201,6 +186,6 @@ def write_csv_utf8_bom(
             counter += 1
 
     # Write with UTF-8 BOM
-    df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    df.to_csv(output_path, index=False, encoding="utf-8-sig")
 
     return output_path

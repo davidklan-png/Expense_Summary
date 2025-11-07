@@ -9,9 +9,10 @@ All paths are resolved relative to the project root for relative paths.
 """
 
 import os
-import tomllib
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Optional
+
+import tomllib
 
 
 class Config:
@@ -30,8 +31,8 @@ class Config:
 
         self.project_root = project_root
         self.config_file = config_file
-        self._config: Dict[str, Any] = {}
-        self._dir_overrides: Dict[str, Path] = {}  # CLI overrides for directories
+        self._config: dict[str, Any] = {}
+        self._dir_overrides: dict[str, Path] = {}  # CLI overrides for directories
         self._load_config()
 
     def _load_config(self) -> None:
@@ -151,9 +152,7 @@ class Config:
                 missing.append(f"{name}: {path}")
 
         if missing:
-            raise FileNotFoundError(
-                f"Required directories not found:\n" + "\n".join(f"  - {m}" for m in missing)
-            )
+            raise FileNotFoundError("Required directories not found:\n" + "\n".join(f"  - {m}" for m in missing))
 
         # Archive is optional - will be created on first use
         if not self.archive_dir.exists():
@@ -182,9 +181,7 @@ class Config:
                 missing.append(str(template_path))
 
         if missing:
-            raise FileNotFoundError(
-                f"Required template files not found:\n" + "\n".join(f"  - {m}" for m in missing)
-            )
+            raise FileNotFoundError("Required template files not found:\n" + "\n".join(f"  - {m}" for m in missing))
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value by key.

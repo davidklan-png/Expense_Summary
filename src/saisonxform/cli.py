@@ -7,7 +7,7 @@ Uses Typer for robust CLI architecture with subcommands.
 import sys
 import warnings
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import typer
 
@@ -23,7 +23,7 @@ app = typer.Typer(
 
 @app.command()
 def run(
-    month: List[str] = typer.Option(
+    month: list[str] = typer.Option(
         [],
         "--month",
         "-m",
@@ -74,9 +74,10 @@ def run(
     Use --month to process specific months, --force to reprocess archived months.
     """
     import pandas as pd
+
     from saisonxform.io import read_csv_with_detection, write_csv_utf8_bom
-    from saisonxform.selectors import filter_relevant_transactions, estimate_attendee_count, sample_attendee_ids
     from saisonxform.reporting import generate_html_report
+    from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
 
     # Load configuration with overrides
     config = Config(config_file=config_file)
@@ -121,16 +122,16 @@ def run(
     # TODO: Implement archival workflow (Phase 3)
 
     # Load attendee reference
-    namelist_path = config.reference_dir / 'NameList.csv'
+    namelist_path = config.reference_dir / "NameList.csv"
     if not namelist_path.exists():
         typer.echo(f"ERROR: NameList.csv not found at {namelist_path}")
         raise typer.Exit(code=1)
 
-    attendee_ref = pd.read_csv(namelist_path, encoding='utf-8')
-    available_ids = attendee_ref['ID'].astype(str).tolist()
+    attendee_ref = pd.read_csv(namelist_path, encoding="utf-8")
+    available_ids = attendee_ref["ID"].astype(str).tolist()
 
     # Find CSV files in input directory
-    csv_files = list(config.input_dir.glob('*.csv'))
+    csv_files = list(config.input_dir.glob("*.csv"))
     if not csv_files:
         typer.echo(f"No CSV files found in {config.input_dir}")
         raise typer.Exit(code=0)
@@ -152,7 +153,7 @@ def run(
                 typer.echo(f"  • Encoding: {encoding}")
 
             if df.empty:
-                typer.echo(f"  • SKIPPED: Empty file")
+                typer.echo("  • SKIPPED: Empty file")
                 continue
 
             # TODO Phase 4: Keep ALL rows, not just filtered ones
@@ -165,7 +166,7 @@ def run(
                 typer.echo(f"  • Relevant transactions: {len(relevant_df)}")
 
             if len(relevant_df) == 0:
-                typer.echo(f"  • SKIPPED: No meeting/entertainment expenses found")
+                typer.echo("  • SKIPPED: No meeting/entertainment expenses found")
                 continue
 
             # Process each relevant transaction
@@ -175,23 +176,19 @@ def run(
             for _, row in relevant_df.iterrows():
                 # TODO Phase 5: Pass config parameters to estimation functions
                 # Estimate attendee count
-                amount = row.get('利用金額', 0)
+                amount = row.get("利用金額", 0)
                 count = estimate_attendee_count(amount)
                 attendee_counts.append(count)
 
                 # Sample attendee IDs
-                ids_dict = sample_attendee_ids(
-                    count=count,
-                    available_ids=available_ids,
-                    return_dict=True
-                )
+                ids_dict = sample_attendee_ids(count=count, available_ids=available_ids, return_dict=True)
                 id_assignments.append(ids_dict)
 
             # Add attendee columns to relevant transactions
-            relevant_df['出席者'] = attendee_counts
+            relevant_df["出席者"] = attendee_counts
 
             for i in range(1, 9):
-                col_name = f'ID{i}'
+                col_name = f"ID{i}"
                 relevant_df[col_name] = [assignment[col_name] for assignment in id_assignments]
 
             # Generate output files
@@ -209,14 +206,14 @@ def run(
                 attendee_reference=attendee_ref,
                 output_path=html_output,
                 source_filename=csv_file.name,
-                handle_duplicates=True
+                handle_duplicates=True,
             )
             typer.echo(f"  • HTML report: {html_path.name}")
 
             # TODO Phase 3: Archive file after successful processing
 
             processed_count += 1
-            typer.echo(f"  ✓ SUCCESS")
+            typer.echo("  ✓ SUCCESS")
 
         except Exception as e:
             typer.echo(f"  ✗ ERROR: {e}")
@@ -226,7 +223,7 @@ def run(
 
     # Summary
     typer.echo("\n" + "=" * 60)
-    typer.echo(f"Processing complete:")
+    typer.echo("Processing complete:")
     typer.echo(f"  • Processed: {processed_count}")
     typer.echo(f"  • Errors: {error_count}")
     typer.echo(f"  • Total: {len(csv_files)}")
@@ -285,9 +282,9 @@ def validate_config(
 
             # Archive can be auto-created, so just note its status
             if config.archive_dir.exists():
-                typer.echo(f"  ✓ Archive directory exists")
+                typer.echo("  ✓ Archive directory exists")
             else:
-                typer.echo(f"  ℹ Archive directory will be auto-created on first use")
+                typer.echo("  ℹ Archive directory will be auto-created on first use")
         else:
             # Normal mode: validate with potential directory creation
             config.validate_directories()
@@ -342,7 +339,7 @@ def main_callback(
         return
 
     # Check for deprecated usage patterns
-    if len(sys.argv) > 1 and not any(arg in sys.argv for arg in ['--help', '-h', '--version']):
+    if len(sys.argv) > 1 and not any(arg in sys.argv for arg in ["--help", "-h", "--version"]):
         deprecated_cmd = sys.argv[1]
         if deprecated_cmd == "process":
             warnings.warn(
@@ -350,7 +347,7 @@ def main_callback(
                 "Example: saisonxform run\n"
                 "Running 'run' command for backward compatibility...",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             # Redirect to run command
             ctx.invoke(run)
