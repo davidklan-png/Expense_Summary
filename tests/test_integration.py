@@ -2,11 +2,9 @@
 # TODO: Update tests to use new Typer CLI structure
 # from saisonxform.cli import process_files
 import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from saisonxform.config import Config
 
 

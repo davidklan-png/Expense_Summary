@@ -1,9 +1,7 @@
 """Tests for HTML report generation."""
-from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from saisonxform.reporting import generate_html_report, get_unique_attendees, prepare_report_context
 
 
@@ -25,7 +23,7 @@ def sample_transactions():
             "ID6": ["", "", "7"],
             "ID7": ["", "", ""],
             "ID8": ["", "", ""],
-        }
+        },
     )
 
 
@@ -38,7 +36,7 @@ def attendee_reference():
             "Name": ["山田太郎", "佐藤花子", "鈴木一郎", "田中美咲", "高橋健太", "伊藤誠"],
             "Title": ["部長", "課長", "主任", "係長", "社員", "社員"],
             "Company": ["ABC株式会社", "XYZ株式会社", "DEF株式会社", "GHI株式会社", "JKL株式会社", "MNO株式会社"],
-        }
+        },
     )
 
 
@@ -65,7 +63,7 @@ class TestUniqueAttendeeExtraction:
     def test_get_unique_attendees_empty_transactions(self, attendee_reference):
         """Should return empty DataFrame for empty transactions."""
         empty_df = pd.DataFrame(
-            {"ID1": [], "ID2": [], "ID3": [], "ID4": [], "ID5": [], "ID6": [], "ID7": [], "ID8": []}
+            {"ID1": [], "ID2": [], "ID3": [], "ID4": [], "ID5": [], "ID6": [], "ID7": [], "ID8": []},
         )
 
         unique = get_unique_attendees(empty_df, attendee_reference)
@@ -75,7 +73,7 @@ class TestUniqueAttendeeExtraction:
     def test_get_unique_attendees_missing_reference(self, sample_transactions):
         """Should handle case where some IDs are not in reference."""
         partial_ref = pd.DataFrame(
-            {"ID": ["1", "2"], "Name": ["山田太郎", "佐藤花子"], "Title": ["部長", "課長"], "Company": ["ABC株式会社", "XYZ株式会社"]}
+            {"ID": ["1", "2"], "Name": ["山田太郎", "佐藤花子"], "Title": ["部長", "課長"], "Company": ["ABC株式会社", "XYZ株式会社"]},
         )
 
         unique = get_unique_attendees(sample_transactions, partial_ref)
@@ -95,7 +93,7 @@ class TestReportContextPreparation:
     def test_prepare_context_structure(self, sample_transactions, attendee_reference):
         """Should create context with all required keys."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv"
+            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv",
         )
 
         assert "filename" in context
@@ -107,7 +105,7 @@ class TestReportContextPreparation:
     def test_prepare_context_metadata(self, sample_transactions, attendee_reference):
         """Should include correct metadata."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv"
+            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv",
         )
 
         assert context["filename"] == "202510_A.csv"
@@ -117,7 +115,7 @@ class TestReportContextPreparation:
     def test_prepare_context_transactions_as_dicts(self, sample_transactions, attendee_reference):
         """Should convert transactions DataFrame to list of dicts."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv"
+            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv",
         )
 
         assert isinstance(context["transactions"], list)
@@ -128,7 +126,7 @@ class TestReportContextPreparation:
     def test_prepare_context_unique_attendees_as_dicts(self, sample_transactions, attendee_reference):
         """Should convert unique attendees to list of dicts."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv"
+            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv",
         )
 
         assert isinstance(context["unique_attendees"], list)
@@ -231,7 +229,7 @@ class TestHTMLReportGeneration:
                 "ID6": [],
                 "ID7": [],
                 "ID8": [],
-            }
+            },
         )
 
         output_file = tmp_path / "empty_report.html"

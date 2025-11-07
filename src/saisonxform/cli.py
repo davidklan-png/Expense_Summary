@@ -76,6 +76,7 @@ def run(
     import pandas as pd
 
     from saisonxform.io import read_csv_with_detection, write_csv_utf8_bom
+    from saisonxform.month_utils import filter_files_by_months, get_archived_months, get_latest_months, has_retry_marker
     from saisonxform.reporting import generate_html_report
     from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
 
@@ -117,8 +118,6 @@ def run(
         typer.echo()
 
     # TODO: Validate paths are not inside git repo (security requirement)
-    # TODO: Implement month filtering logic (Phase 2)
-    # TODO: Implement already-archived detection (Phase 2)
     # TODO: Implement archival workflow (Phase 3)
 
     # Load attendee reference
@@ -131,10 +130,67 @@ def run(
     available_ids = attendee_ref["ID"].astype(str).tolist()
 
     # Find CSV files in input directory
-    csv_files = list(config.input_dir.glob("*.csv"))
-    if not csv_files:
+    all_csv_files = list(config.input_dir.glob("*.csv"))
+    if not all_csv_files:
         typer.echo(f"No CSV files found in {config.input_dir}")
         raise typer.Exit(code=0)
+
+    # Month filtering logic
+    months_to_process = month  # User-specified months via --month flag
+    if not months_to_process:
+        # Default: process latest 2 months
+        months_to_process = get_latest_months(config.input_dir, n=2)
+        if months_to_process and verbose:
+            typer.echo(f"No --month specified, defaulting to latest 2 months: {', '.join(months_to_process)}\n")
+        elif not months_to_process:
+            # No files with month prefixes found, process all files
+            if verbose:
+                typer.echo("No files with YYYYMM prefixes found, processing all files\n")
+
+    # Filter files by months
+    if months_to_process:
+        csv_files = filter_files_by_months(all_csv_files, months_to_process)
+        if verbose:
+            typer.echo(f"Filtering to months: {', '.join(months_to_process)}")
+            typer.echo(f"Files to process: {len(csv_files)} of {len(all_csv_files)}\n")
+    else:
+        csv_files = all_csv_files
+
+    if not csv_files:
+        typer.echo(f"No CSV files found matching specified months: {', '.join(months_to_process)}")
+        raise typer.Exit(code=0)
+
+    # Already-archived month detection
+    if not force:
+        archived_months = get_archived_months(config.archive_dir)
+        if archived_months and verbose:
+            typer.echo(f"Already archived months: {', '.join(sorted(archived_months))}")
+
+        # Check if any requested months are already archived
+        months_in_files = set()
+        for csv_file in csv_files:
+            from saisonxform.month_utils import get_month_from_filename
+
+            file_month = get_month_from_filename(csv_file.name)
+            if file_month:
+                months_in_files.add(file_month)
+
+        already_archived = months_in_files & archived_months
+        if already_archived:
+            # Check if they have retry markers
+            months_with_retry = {m for m in already_archived if has_retry_marker(config.archive_dir, m)}
+            months_without_retry = already_archived - months_with_retry
+
+            if months_without_retry:
+                typer.echo("\nERROR: The following months have already been archived:")
+                for m in sorted(months_without_retry):
+                    typer.echo(f"  • {m}")
+                typer.echo("\nUse --force to reprocess these months.")
+                raise typer.Exit(code=1)
+
+            if months_with_retry and verbose:
+                typer.echo(f"Retry markers found for: {', '.join(sorted(months_with_retry))}")
+                typer.echo("These months will be reprocessed.\n")
 
     typer.echo(f"\nFound {len(csv_files)} CSV file(s) to process\n")
 

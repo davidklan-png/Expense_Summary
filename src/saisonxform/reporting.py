@@ -53,7 +53,9 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
 
 
 def prepare_report_context(
-    transactions: pd.DataFrame, attendee_reference: pd.DataFrame, filename: str,
+    transactions: pd.DataFrame,
+    attendee_reference: pd.DataFrame,
+    filename: str,
 ) -> dict[str, Any]:
     """
     Prepare context dictionary for template rendering.

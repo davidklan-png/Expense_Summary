@@ -1,7 +1,5 @@
 """Tests for attendee estimation and ID selection logic."""
 import pandas as pd
-import pytest
-
 from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
 
 
@@ -15,7 +13,7 @@ class TestTransactionFiltering:
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03"],
                 "利用金額": [10000, 5000, 3000],
                 "備考": ["会議費", "交通費", "会議費"],
-            }
+            },
         )
 
         result = filter_relevant_transactions(df)
@@ -38,7 +36,7 @@ class TestTransactionFiltering:
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04"],
                 "利用金額": [10000, 5000, 3000, 8000],
                 "備考": ["会議費", "交通費", "接待費", "その他"],
-            }
+            },
         )
 
         result = filter_relevant_transactions(df)

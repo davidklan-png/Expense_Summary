@@ -1,9 +1,7 @@
 """Tests for edge cases and error conditions."""
-from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from saisonxform.io import detect_encoding, find_header_row, read_csv_with_detection
 from saisonxform.reporting import get_unique_attendees
 from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions
@@ -96,7 +94,7 @@ class TestReportingEdgeCases:
                 "Name": ["Test 1", "Test 2"],
                 "Title": ["Title 1", "Title 2"],
                 "Company": ["Company 1", "Company 2"],
-            }
+            },
         )
 
         result = get_unique_attendees(df, attendee_ref)
@@ -116,7 +114,7 @@ class TestReportingEdgeCases:
                 "ID6": ["", "", ""],
                 "ID7": ["", "", ""],
                 "ID8": ["", "", ""],
-            }
+            },
         )
 
         attendee_ref = pd.DataFrame(
@@ -125,7 +123,7 @@ class TestReportingEdgeCases:
                 "Name": ["Test 1", "Test 2"],
                 "Title": ["Title 1", "Title 2"],
                 "Company": ["Company 1", "Company 2"],
-            }
+            },
         )
 
         result = get_unique_attendees(df, attendee_ref)

@@ -45,7 +45,11 @@ def estimate_attendee_count(amount: float, min_attendees: int = 2, max_attendees
 
 
 def sample_attendee_ids(
-    count: int, available_ids: list[str], id_2_weight: float = 0.9, id_1_weight: float = 0.1, return_dict: bool = False,
+    count: int,
+    available_ids: list[str],
+    id_2_weight: float = 0.9,
+    id_1_weight: float = 0.1,
+    return_dict: bool = False,
 ) -> Union[list[str], dict[str, str]]:
     """
     Sample attendee IDs with weighted primary selection.

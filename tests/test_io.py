@@ -1,9 +1,7 @@
 """Tests for CSV I/O operations with encoding detection."""
-from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from saisonxform.io import detect_encoding, find_header_row, read_csv_with_detection, write_csv_utf8_bom
 
 
@@ -13,7 +11,7 @@ class TestEncodingDetection:
     def test_detect_utf8_bom(self, tmp_path):
         """Should detect UTF-8 with BOM encoding."""
         test_file = tmp_path / "utf8_bom.csv"
-        test_file.write_bytes(b"\xef\xbb\xbf" + "テスト".encode("utf-8"))
+        test_file.write_bytes(b"\xef\xbb\xbf" + "テスト".encode())
 
         encoding = detect_encoding(test_file)
         assert encoding in ["utf-8-sig", "UTF-8-SIG"]
@@ -28,7 +26,7 @@ class TestEncodingDetection:
                 "2025-10-01,東京レストラン,10000,会議費",
                 "2025-10-02,大阪カフェ,5000,接待費",
                 "2025-10-03,名古屋ホテル,15000,会議費",
-            ]
+            ],
         )
         test_file.write_bytes(content.encode("cp932"))
 
