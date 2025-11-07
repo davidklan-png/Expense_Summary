@@ -49,6 +49,25 @@ Saison Transform processes credit card CSV files to:
 - Path precedence logging (CLI > env > config > pyproject)
 - Sensitive data redaction (summary stats only)
 
+### ✅ Phase 7: Testing (Complete)
+- 65 tests passing (53 unit + 12 integration)
+- Integration tests using Typer CliRunner
+- 67% overall coverage (month_utils: 94%, selectors: 90%)
+
+### ✅ Phase 8: Documentation (Complete)
+- Comprehensive README with all CLI commands
+- `config.toml.example` with detailed comments
+- Demo folder with example input/output files
+
+## Demo Files
+
+See the [`demo/`](demo/) folder for example input and output files demonstrating the complete pipeline:
+- **Input**: Sample transaction CSV (202510_sample.csv)
+- **Reference**: Sample attendee list (NameList.csv)
+- **Output**: Processed CSV and HTML report
+
+The demo shows all features including CSV preservation (Phase 4) and archival workflow (Phase 3).
+
 ## Quick Start
 
 ### 1. Prerequisites

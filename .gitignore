@@ -84,6 +84,12 @@ Reference/
 Output/
 Archive/
 
+# Exception: Allow demo/ subdirectory for example files
+!demo/
+!demo/Input/
+!demo/Reference/
+!demo/Output/
+
 # OpenSpec archives (keep only active changes)
 openspec/changes/archive/
 
