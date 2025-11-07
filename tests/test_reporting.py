@@ -93,7 +93,9 @@ class TestReportContextPreparation:
     def test_prepare_context_structure(self, sample_transactions, attendee_reference):
         """Should create context with all required keys."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv",
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            filename="202510_A.csv",
         )
 
         assert "filename" in context
@@ -105,7 +107,9 @@ class TestReportContextPreparation:
     def test_prepare_context_metadata(self, sample_transactions, attendee_reference):
         """Should include correct metadata."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="202510_A.csv",
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            filename="202510_A.csv",
         )
 
         assert context["filename"] == "202510_A.csv"
@@ -115,7 +119,9 @@ class TestReportContextPreparation:
     def test_prepare_context_transactions_as_dicts(self, sample_transactions, attendee_reference):
         """Should convert transactions DataFrame to list of dicts."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv",
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            filename="test.csv",
         )
 
         assert isinstance(context["transactions"], list)
@@ -126,7 +132,9 @@ class TestReportContextPreparation:
     def test_prepare_context_unique_attendees_as_dicts(self, sample_transactions, attendee_reference):
         """Should convert unique attendees to list of dicts."""
         context = prepare_report_context(
-            transactions=sample_transactions, attendee_reference=attendee_reference, filename="test.csv",
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            filename="test.csv",
         )
 
         assert isinstance(context["unique_attendees"], list)

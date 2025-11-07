@@ -4,9 +4,14 @@ This module provides functions for:
 - Parsing YYYYMM month prefixes from filenames
 - Finding the latest N months from available files
 - Detecting already-archived months
+- Archiving processed files to Archive/YYYYMM/
+- Managing retry markers for failed archival
 """
 
+import json
 import re
+import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -154,3 +159,142 @@ def filter_files_by_months(csv_files: list[Path], months: list[str]) -> list[Pat
             filtered.append(csv_file)
 
     return filtered
+
+
+def archive_file(file_path: Path, archive_dir: Path, month: str) -> Path:
+    """Move a file to Archive/YYYYMM/ directory.
+
+    Creates Archive/ and YYYYMM/ subdirectories if they don't exist.
+    Handles cross-filesystem moves using copy+delete.
+
+    Args:
+        file_path: Source file path to archive
+        archive_dir: Archive root directory
+        month: YYYYMM string for subdirectory
+
+    Returns:
+        Path to archived file location
+
+    Raises:
+        FileNotFoundError: If source file doesn't exist
+        PermissionError: If lacking permissions for move/delete
+        OSError: For other filesystem errors
+
+    Examples:
+        >>> archive_file(Path("Input/202510_data.csv"), Path("Archive"), "202510")
+        Path("Archive/202510/202510_data.csv")
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"Source file not found: {file_path}")
+
+    # Create Archive/YYYYMM/ directory
+    month_archive_dir = archive_dir / month
+    month_archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Destination path
+    dest_path = month_archive_dir / file_path.name
+
+    # Handle existing file at destination
+    if dest_path.exists():
+        # Add timestamp to avoid collision
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        stem = dest_path.stem
+        suffix = dest_path.suffix
+        dest_path = month_archive_dir / f"{stem}_{timestamp}{suffix}"
+
+    # Try move first (fast if same filesystem)
+    try:
+        shutil.move(str(file_path), str(dest_path))
+    except (OSError, PermissionError) as e:
+        # If move fails, try copy+delete (works across filesystems)
+        try:
+            shutil.copy2(str(file_path), str(dest_path))
+            file_path.unlink()
+        except Exception as copy_error:
+            raise OSError(f"Failed to archive file {file_path}: {copy_error}") from e
+
+    return dest_path
+
+
+def create_retry_marker(archive_dir: Path, month: str, failed_files: list[str], errors: list[str]) -> Path:
+    """Create a retry marker JSON file for a partially failed month.
+
+    Args:
+        archive_dir: Archive directory path
+        month: YYYYMM string
+        failed_files: List of filenames that failed to process
+        errors: List of error messages corresponding to failed files
+
+    Returns:
+        Path to created retry marker file
+
+    Examples:
+        >>> create_retry_marker(
+        ...     Path("Archive"),
+        ...     "202510",
+        ...     ["202510_a.csv", "202510_b.csv"],
+        ...     ["Error 1", "Error 2"]
+        ... )
+        Path("Archive/.retry_202510.json")
+    """
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    retry_data = {
+        "month": month,
+        "failed_files": failed_files,
+        "errors": errors,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+    retry_marker_path = archive_dir / f".retry_{month}.json"
+    with open(retry_marker_path, "w", encoding="utf-8") as f:
+        json.dump(retry_data, f, indent=2, ensure_ascii=False)
+
+    return retry_marker_path
+
+
+def delete_retry_marker(archive_dir: Path, month: str) -> bool:
+    """Delete retry marker for a month (all files succeeded).
+
+    Args:
+        archive_dir: Archive directory path
+        month: YYYYMM string
+
+    Returns:
+        True if marker was deleted, False if it didn't exist
+
+    Examples:
+        >>> delete_retry_marker(Path("Archive"), "202510")
+        True  # Marker was deleted
+    """
+    retry_marker = archive_dir / f".retry_{month}.json"
+    if retry_marker.exists():
+        retry_marker.unlink()
+        return True
+    return False
+
+
+def get_files_to_archive_by_month(processed_files: list[Path]) -> dict[str, list[Path]]:
+    """Group processed files by month for batch archival.
+
+    Args:
+        processed_files: List of successfully processed file paths
+
+    Returns:
+        Dictionary mapping YYYYMM -> list of file paths
+
+    Examples:
+        >>> files = [Path("202510_a.csv"), Path("202510_b.csv"), Path("202511_c.csv")]
+        >>> get_files_to_archive_by_month(files)
+        {"202510": [Path("202510_a.csv"), Path("202510_b.csv")], "202511": [Path("202511_c.csv")]}
+    """
+    month_files: dict[str, list[Path]] = {}
+
+    for file_path in processed_files:
+        month = get_month_from_filename(file_path.name)
+        if month:
+            if month not in month_files:
+                month_files[month] = []
+            month_files[month].append(file_path)
+
+    return month_files

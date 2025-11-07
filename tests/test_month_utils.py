@@ -1,10 +1,15 @@
 """Tests for month_utils module."""
 
+import json
 from pathlib import Path
 
 from saisonxform.month_utils import (
+    archive_file,
+    create_retry_marker,
+    delete_retry_marker,
     filter_files_by_months,
     get_archived_months,
+    get_files_to_archive_by_month,
     get_latest_months,
     get_month_from_filename,
     has_retry_marker,
@@ -253,3 +258,169 @@ class TestFilterFilesByMonths:
         result = filter_files_by_months([], ["202510"])
 
         assert result == []
+
+
+class TestArchiveFile:
+    """Test file archival to Archive/YYYYMM/ directories."""
+
+    def test_archive_file_success(self, tmp_path):
+        """Should move file to Archive/YYYYMM/ directory."""
+        # Create input file
+        input_dir = tmp_path / "Input"
+        input_dir.mkdir()
+        test_file = input_dir / "202510_test.csv"
+        test_file.write_text("test data", encoding="utf-8")
+
+        archive_dir = tmp_path / "Archive"
+
+        # Archive the file
+        result = archive_file(test_file, archive_dir, "202510")
+
+        # Check file was moved
+        assert not test_file.exists()
+        assert result.exists()
+        assert result == archive_dir / "202510" / "202510_test.csv"
+        assert result.read_text(encoding="utf-8") == "test data"
+
+    def test_archive_creates_directories(self, tmp_path):
+        """Should auto-create Archive/ and YYYYMM/ subdirectories."""
+        input_file = tmp_path / "202510_data.csv"
+        input_file.write_text("content", encoding="utf-8")
+
+        archive_dir = tmp_path / "Archive"
+
+        result = archive_file(input_file, archive_dir, "202510")
+
+        assert archive_dir.exists()
+        assert (archive_dir / "202510").exists()
+        assert result.exists()
+
+    def test_archive_handles_duplicate_filename(self, tmp_path):
+        """Should add timestamp when destination file exists."""
+        input_dir = tmp_path / "Input"
+        input_dir.mkdir()
+
+        # Create two files with same name
+        file1 = input_dir / "202510_test.csv"
+        file1.write_text("data1", encoding="utf-8")
+
+        archive_dir = tmp_path / "Archive"
+
+        # Archive first file
+        result1 = archive_file(file1, archive_dir, "202510")
+
+        # Create second file with same name
+        file2 = input_dir / "202510_test.csv"
+        file2.write_text("data2", encoding="utf-8")
+
+        # Archive second file - should get timestamped name
+        result2 = archive_file(file2, archive_dir, "202510")
+
+        assert result1 != result2
+        assert result1.exists()
+        assert result2.exists()
+        assert result1.read_text(encoding="utf-8") == "data1"
+        assert result2.read_text(encoding="utf-8") == "data2"
+        assert "_202" in result2.stem  # Timestamp in filename
+
+    def test_archive_nonexistent_file(self, tmp_path):
+        """Should raise FileNotFoundError for nonexistent file."""
+        nonexistent = tmp_path / "nonexistent.csv"
+        archive_dir = tmp_path / "Archive"
+
+        try:
+            archive_file(nonexistent, archive_dir, "202510")
+            raise AssertionError("Should have raised FileNotFoundError")
+        except FileNotFoundError as e:
+            assert "Source file not found" in str(e)
+
+
+class TestCreateRetryMarker:
+    """Test retry marker creation for failed processing."""
+
+    def test_create_retry_marker(self, tmp_path):
+        """Should create JSON retry marker with failure details."""
+        marker_path = create_retry_marker(tmp_path, "202510", ["202510_a.csv", "202510_b.csv"], ["Error 1", "Error 2"])
+
+        assert marker_path.exists()
+        assert marker_path.name == ".retry_202510.json"
+
+        # Verify JSON content
+        with open(marker_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["month"] == "202510"
+        assert data["failed_files"] == ["202510_a.csv", "202510_b.csv"]
+        assert data["errors"] == ["Error 1", "Error 2"]
+        assert "timestamp" in data
+
+    def test_create_retry_marker_creates_directory(self, tmp_path):
+        """Should create archive directory if it doesn't exist."""
+        archive_dir = tmp_path / "Archive"
+        assert not archive_dir.exists()
+
+        create_retry_marker(archive_dir, "202510", ["file.csv"], ["error"])
+
+        assert archive_dir.exists()
+        assert (archive_dir / ".retry_202510.json").exists()
+
+
+class TestDeleteRetryMarker:
+    """Test retry marker deletion on success."""
+
+    def test_delete_existing_marker(self, tmp_path):
+        """Should delete retry marker and return True."""
+        marker = tmp_path / ".retry_202510.json"
+        marker.write_text("{}", encoding="utf-8")
+
+        result = delete_retry_marker(tmp_path, "202510")
+
+        assert result is True
+        assert not marker.exists()
+
+    def test_delete_nonexistent_marker(self, tmp_path):
+        """Should return False if marker doesn't exist."""
+        result = delete_retry_marker(tmp_path, "202510")
+
+        assert result is False
+
+
+class TestGetFilesToArchiveByMonth:
+    """Test grouping files by month for archival."""
+
+    def test_group_files_by_month(self, tmp_path):
+        """Should group files by their YYYYMM prefix."""
+        files = [
+            tmp_path / "202510_a.csv",
+            tmp_path / "202510_b.csv",
+            tmp_path / "202511_c.csv",
+            tmp_path / "202509_d.csv",
+        ]
+
+        result = get_files_to_archive_by_month(files)
+
+        assert "202510" in result
+        assert "202511" in result
+        assert "202509" in result
+        assert len(result["202510"]) == 2
+        assert len(result["202511"]) == 1
+        assert len(result["202509"]) == 1
+
+    def test_ignore_files_without_month(self, tmp_path):
+        """Should ignore files without month prefix."""
+        files = [
+            tmp_path / "202510_a.csv",
+            tmp_path / "NameList.csv",
+            tmp_path / "data.csv",
+        ]
+
+        result = get_files_to_archive_by_month(files)
+
+        assert "202510" in result
+        assert len(result) == 1
+
+    def test_empty_file_list(self):
+        """Should return empty dict for empty file list."""
+        result = get_files_to_archive_by_month([])
+
+        assert result == {}

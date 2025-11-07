@@ -76,7 +76,16 @@ def run(
     import pandas as pd
 
     from saisonxform.io import read_csv_with_detection, write_csv_utf8_bom
-    from saisonxform.month_utils import filter_files_by_months, get_archived_months, get_latest_months, has_retry_marker
+    from saisonxform.month_utils import (
+        archive_file,
+        create_retry_marker,
+        delete_retry_marker,
+        filter_files_by_months,
+        get_archived_months,
+        get_latest_months,
+        get_month_from_filename,
+        has_retry_marker,
+    )
     from saisonxform.reporting import generate_html_report
     from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
 
@@ -118,7 +127,6 @@ def run(
         typer.echo()
 
     # TODO: Validate paths are not inside git repo (security requirement)
-    # TODO: Implement archival workflow (Phase 3)
 
     # Load attendee reference
     namelist_path = config.reference_dir / "NameList.csv"
@@ -197,7 +205,12 @@ def run(
     processed_count = 0
     error_count = 0
 
+    # Track archival results per month
+    month_results: dict[str, dict[str, list]] = {}  # month -> {succeeded: [files], failed: [(file, error)]}
+
     for csv_file in csv_files:
+        file_month = get_month_from_filename(csv_file.name)
+
         try:
             typer.echo(f"Processing: {csv_file.name}")
 
@@ -266,7 +279,26 @@ def run(
             )
             typer.echo(f"  • HTML report: {html_path.name}")
 
-            # TODO Phase 3: Archive file after successful processing
+            # Archive file after successful processing
+            if file_month:
+                try:
+                    archived_path = archive_file(csv_file, config.archive_dir, file_month)
+                    if verbose:
+                        typer.echo(f"  • Archived to: {archived_path}")
+                    else:
+                        typer.echo(f"  • Archived to: Archive/{file_month}/")
+
+                    # Track successful archival
+                    if file_month not in month_results:
+                        month_results[file_month] = {"succeeded": [], "failed": []}
+                    month_results[file_month]["succeeded"].append(csv_file.name)
+
+                except Exception as archive_error:
+                    typer.echo(f"  • WARNING: Failed to archive: {archive_error}")
+                    # Track archival failure
+                    if file_month not in month_results:
+                        month_results[file_month] = {"succeeded": [], "failed": []}
+                    month_results[file_month]["failed"].append((csv_file.name, str(archive_error)))
 
             processed_count += 1
             typer.echo("  ✓ SUCCESS")
@@ -275,7 +307,29 @@ def run(
             typer.echo(f"  ✗ ERROR: {e}")
             error_count += 1
 
+            # Track processing failure for retry marker
+            if file_month:
+                if file_month not in month_results:
+                    month_results[file_month] = {"succeeded": [], "failed": []}
+                month_results[file_month]["failed"].append((csv_file.name, str(e)))
+
         typer.echo()
+
+    # Handle retry markers per month
+    if month_results:
+        for month_str, results in month_results.items():
+            if results["failed"]:
+                # Create retry marker for months with failures
+                failed_files = [f[0] for f in results["failed"]]
+                errors = [f[1] for f in results["failed"]]
+                marker_path = create_retry_marker(config.archive_dir, month_str, failed_files, errors)
+                if verbose:
+                    typer.echo(f"Created retry marker for {month_str}: {marker_path.name}")
+            elif results["succeeded"]:
+                # Delete retry marker for fully successful months
+                if delete_retry_marker(config.archive_dir, month_str):
+                    if verbose:
+                        typer.echo(f"Deleted retry marker for {month_str} (all files succeeded)")
 
     # Summary
     typer.echo("\n" + "=" * 60)
