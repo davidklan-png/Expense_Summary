@@ -1,4 +1,8 @@
-## ADDED Requirements
+# data-pipeline Specification
+
+## Purpose
+TBD - created by archiving change plan-data-pipeline. Update Purpose after archive.
+## Requirements
 ### Requirement: Source Ingestion and Normalization
 Business logic MUST first read credit CSV statements from `Input/` and reference files from `Reference/` as described in `docs/spec.txt`, then emit normalized CSV files before any HTML rendering occurs.
 
@@ -170,3 +174,4 @@ The repository MUST include canonical input/output pairs demonstrating expected 
 #### Scenario: Golden fixtures
 - **WHEN** developers run `pytest -m acceptance`
 - **THEN** golden files validate that a known input (e.g., `tests/data/sample_202510.csv`) produces the documented CSV + HTML output stored under `tests/data/expected/`.
+

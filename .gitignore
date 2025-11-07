@@ -84,6 +84,9 @@ Archive/
 # OpenSpec archives (keep only active changes)
 openspec/changes/archive/
 
+# Serena MCP workspace data
+.serena/
+
 # Temporary files
 *.tmp
 *.bak
