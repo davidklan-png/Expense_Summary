@@ -112,6 +112,17 @@ Default month processing MUST operate on filename prefixes shaped as `YYYYMM*`, 
 - **WHEN** files do not match the `YYYYMM` pattern
 - **THEN** the CLI logs a warning and skips them unless explicit `--month` flags were provided that match the ambiguous files.
 
+### Requirement: Post-Processing Archival
+After successfully processing a month's CSVs, the raw files MUST be moved from `Input/` to the configured `Archive/` directory to prevent reprocessing the same month.
+
+#### Scenario: Archive by month
+- **WHEN** month `202510` is processed (either via default selection or explicit `--month 202510`)
+- **THEN** all input files matching `202510*.csv` are moved into `Archive/202510/`, creating the subdirectory if needed, and the CLI logs the destination.
+
+#### Scenario: Archive failure handling
+- **WHEN** archival fails (e.g., permissions)
+- **THEN** the CLI emits an error, leaves a retry marker file in `Archive/` describing which months failed, and exits with non-zero status so operators can intervene before rerunning.
+
 ### Requirement: Performance and Scalability
 The pipeline MUST handle at least 50 CSV files of up to 10,000 rows each within 5 minutes on a modern laptop (16GB RAM), keeping resident memory under 500MB.
 

@@ -186,7 +186,7 @@ openspec validate --strict
 - **Encoding**: Auto-detect input, output UTF-8 with BOM (utf-8-sig)
 - **ID Handling**: Treat as integers, numeric sorting
 - **Error Handling**: Graceful degradation with warnings for missing files, encoding issues, missing columns
-- **Testing**: TDD/BDD approach with ≥90% branch coverage for `saisonxform.pipeline`
+- **Testing**: TDD/BDD approach with ≥90% line coverage for entire `saisonxform` package
 
 ## Development Workflow
 
@@ -202,7 +202,7 @@ openspec validate --strict
 ### Testing Guidelines
 - Use `pytest` with fixtures loading CSV slices from `tests/data/`
 - Name tests after behavior: `test_estimate_attendees_caps_at_eight`
-- Target ≥85% branch coverage (≥90% for pipeline)
+- Target ≥90% line coverage for entire `saisonxform` package
 - Add regression tests for bugfixes (parsing, encoding, selection weights)
 - Test-first workflow (TDD/BDD)
 

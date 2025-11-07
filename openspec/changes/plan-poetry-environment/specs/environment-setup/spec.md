@@ -12,20 +12,19 @@ The repository MUST use Poetry to manage dependencies for the `saisonxform` proj
 - **THEN** a `templates/` directory exists alongside `pyproject.toml`, and the bootstrap command fails fast with a descriptive error if the directory or required base template files (e.g., `templates/report.html.j2`) are missing.
 
 ### Requirement: Configurable External Data Folders
-The application MUST reference three sibling folders—`Input/`, `Reference/`, `Output/`—via configuration stored in `config.toml` at the repository root using relative paths resolved from the repo directory, while also permitting absolute paths and environment-variable overrides.
+The application MUST reference four sibling folders—`Input/`, `Reference/`, `Output/`, and `Archive/`—via configuration stored in `config.toml` at the repository root using relative paths resolved from the repo directory, while also permitting absolute paths and environment-variable overrides.
 
-#### Scenario: Config resolution
-- **GIVEN** `config.toml` contains entries `input_dir = "../Input"`, `reference_dir = "../Reference"`, `output_dir = "../Output"`
+- **GIVEN** `config.toml` contains entries `input_dir = "../Input"`, `reference_dir = "../Reference"`, `output_dir = "../Output"`, `archive_dir = "../Archive"`
 - **WHEN** the CLI loads configuration
 - **THEN** it resolves each path relative to the project root, verifies the directory exists outside the repo, and exposes the absolute paths to the business logic.
 
 #### Scenario: Absolute paths and env overrides
-- **WHEN** a user supplies absolute paths in `config.toml` or exports `INPUT_DIR`, `REFERENCE_DIR`, or `OUTPUT_DIR`
+- **WHEN** a user supplies absolute paths in `config.toml` or exports `INPUT_DIR`, `REFERENCE_DIR`, `OUTPUT_DIR`, or `ARCHIVE_DIR`
 - **THEN** the CLI honors the environment variables first, then the explicit config values (relative or absolute), and finally falls back to `[tool.saisonxform]` entries in `pyproject.toml` if `config.toml` is absent.
 
 #### Scenario: Folder purpose
 - **GIVEN** the resolved directories
-- **THEN** `Input/` stores raw credit CSV files, `Reference/` stores name lists and rule sheets, and `Output/` receives generated CSV/HTML artifacts while remaining untracked by git.
+- **THEN** `Input/` stores raw credit CSV files, `Reference/` stores name lists and rule sheets, `Output/` receives generated CSV/HTML artifacts while remaining untracked by git, and `Archive/` stores month-specific subfolders of processed raw files.
 
 ### Requirement: Configuration Source of Truth
 Runtime settings MUST have a single documented precedence order so contributors know whether to edit `config.toml` or `pyproject.toml`.
