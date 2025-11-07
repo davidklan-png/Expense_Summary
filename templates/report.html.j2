@@ -98,13 +98,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>{{ report_title }}</h1>
+        <h1>会議費・接待費 処理レポート</h1>
 
         <div class="metadata">
-            <p><strong>処理日時:</strong> {{ processing_date }}</p>
-            <p><strong>入力ファイル:</strong> {{ input_filename }}</p>
+            <p><strong>入力ファイル:</strong> {{ filename }}</p>
             <p><strong>トランザクション数:</strong> {{ total_transactions }}</p>
-            <p><strong>対象トランザクション数:</strong> {{ relevant_transactions }}</p>
+            <p><strong>合計金額:</strong> ¥{{ "{:,.0f}".format(total_amount) }}</p>
+            <p><strong>出席者総数:</strong> {{ unique_attendees|length }}</p>
         </div>
 
         <h2>トランザクション詳細</h2>
@@ -130,19 +130,19 @@
             <tbody>
                 {% for transaction in transactions %}
                 <tr>
-                    <td>{{ transaction.date }}</td>
-                    <td>{{ transaction.store }}</td>
-                    <td class="amount">¥{{ "{:,.0f}".format(transaction.amount) }}</td>
-                    <td>{{ transaction.remarks }}</td>
-                    <td>{{ transaction.attendee_count }}</td>
-                    <td>{{ transaction.id1 or '' }}</td>
-                    <td>{{ transaction.id2 or '' }}</td>
-                    <td>{{ transaction.id3 or '' }}</td>
-                    <td>{{ transaction.id4 or '' }}</td>
-                    <td>{{ transaction.id5 or '' }}</td>
-                    <td>{{ transaction.id6 or '' }}</td>
-                    <td>{{ transaction.id7 or '' }}</td>
-                    <td>{{ transaction.id8 or '' }}</td>
+                    <td>{{ transaction['利用日'] }}</td>
+                    <td>{{ transaction['ご利用店名及び商品名'] }}</td>
+                    <td class="amount">¥{{ "{:,.0f}".format(transaction['利用金額']) }}</td>
+                    <td>{{ transaction['備考'] }}</td>
+                    <td>{{ transaction['出席者'] }}</td>
+                    <td>{{ transaction['ID1'] or '' }}</td>
+                    <td>{{ transaction['ID2'] or '' }}</td>
+                    <td>{{ transaction['ID3'] or '' }}</td>
+                    <td>{{ transaction['ID4'] or '' }}</td>
+                    <td>{{ transaction['ID5'] or '' }}</td>
+                    <td>{{ transaction['ID6'] or '' }}</td>
+                    <td>{{ transaction['ID7'] or '' }}</td>
+                    <td>{{ transaction['ID8'] or '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -154,15 +154,15 @@
         {% endif %}
 
         <h2>選択された出席者</h2>
-        {% if attendees and attendees|length > 0 %}
+        {% if unique_attendees and unique_attendees|length > 0 %}
         <div class="attendee-list">
-            {% for attendee in attendees %}
+            {% for attendee in unique_attendees %}
             <div class="attendee-card">
-                <div class="id">ID: {{ attendee.id }}</div>
-                <div class="name">{{ attendee.name }}</div>
+                <div class="id">ID: {{ attendee['ID'] }}</div>
+                <div class="name">{{ attendee['Name'] }}</div>
                 <div class="details">
-                    {{ attendee.title }}<br>
-                    {{ attendee.company }}
+                    {{ attendee['Title'] }}<br>
+                    {{ attendee['Company'] }}
                 </div>
             </div>
             {% endfor %}

@@ -10,15 +10,18 @@
 
 ### ✅ What's Done
 - **Phase 1 Complete**: Poetry environment fully configured
-- CLI skeleton with `validate-config` command
-- Configuration system (env vars > config.toml > pyproject.toml)
-- HTML report template (Japanese)
-- Package structure at `src/saisonxform/`
+- **Phase 2 Complete**: Full data pipeline with 91.55% test coverage
+- CLI with `validate-config` and `process` commands
+- CSV I/O with encoding detection (chardet + fallback chain)
+- Attendee selection with weighted ID sampling (90/10)
+- HTML report generation with Jinja2 templates
+- 62 comprehensive tests, all passing
 
 ### 🚧 What's Next
-- **Phase 2 Starting**: Data pipeline implementation (0/6 tasks)
-- Need to implement CSV I/O, attendee selection, report generation
-- Target ≥90% test coverage with TDD approach
+- **Phase 3 Planning**: Archival workflow with retry markers
+- Per-file archival to Archive/YYYYMM/
+- Already-processed month detection with --force override
+- Retry marker creation/cleanup
 
 ## Get Started in 30 Seconds
 
@@ -35,104 +38,173 @@ poetry shell
 # 4. Verify setup
 poetry run saisonxform validate-config
 
-# 5. Check OpenSpec status
-openspec list
-openspec show plan-data-pipeline
+# 5. Process CSV files
+poetry run saisonxform process
 ```
 
 ## Key Files to Know
 
 ### Configuration
-- `config.toml` - Application settings
+- `config.toml` - Application settings (paths, estimator bounds)
 - `pyproject.toml` - Poetry/package config
 - `.env` - Environment overrides (optional)
 
-### Source Code
-- `src/saisonxform/config.py` - Configuration loader (173 lines)
-- `src/saisonxform/cli.py` - CLI entry point (65 lines)
-- `src/saisonxform/io.py` - **TODO**: CSV I/O (Phase 2)
-- `src/saisonxform/selectors.py` - **TODO**: Attendee logic (Phase 2)
+### Source Code (Implemented)
+- `src/saisonxform/config.py` - Configuration loader
+- `src/saisonxform/cli.py` - CLI with validate-config + process commands
+- `src/saisonxform/io.py` - CSV I/O with encoding detection
+- `src/saisonxform/selectors.py` - Transaction filtering + attendee selection
+- `src/saisonxform/reporting.py` - HTML report generation
 
 ### Templates
-- `templates/report.html.j2` - HTML report template
+- `templates/report.html.j2` - HTML report template (Japanese)
+
+### Tests (62 tests, 91.55% coverage)
+- `tests/test_io.py` - CSV I/O tests (11 tests)
+- `tests/test_selectors.py` - Attendee logic tests (16 tests)
+- `tests/test_reporting.py` - HTML generation tests (13 tests)
+- `tests/test_integration.py` - End-to-end pipeline tests (11 tests)
+- `tests/test_edge_cases.py` - Error handling tests (11 tests)
+- `tests/data/` - Test fixtures (sample CSV, namelist)
 
 ### Specifications
-- `openspec/changes/plan-data-pipeline/` - Phase 2 specs
 - `docs/spec.txt` - Original requirements
+- `openspec/archive/plan-poetry-environment/` - Phase 1 (archived)
+- `openspec/archive/plan-data-pipeline/` - Phase 2 (archived)
 
 ## Essential Commands
 
 ```bash
 # Development
 poetry run saisonxform validate-config  # Check configuration
-poetry run pytest                       # Run tests (none yet)
+poetry run saisonxform process          # Run pipeline
+poetry run pytest -q                    # Run all tests
+poetry run pytest --cov=saisonxform     # Test with coverage
 poetry run black .                      # Format code
 poetry run ruff check                   # Lint code
 
+# Testing
+poetry run pytest -k test_io            # Run specific test file
+poetry run pytest --maxfail=1           # Stop on first failure
+poetry run pytest -v                    # Verbose output
+
 # OpenSpec
-openspec validate plan-data-pipeline --strict  # Validate proposal
-openspec archive plan-poetry-environment --yes # Archive completed
+openspec list                           # List change proposals
+openspec list --specs                   # List capability specs
+openspec validate <change-id> --strict  # Validate proposal
+openspec archive <change-id> --yes      # Archive completed change
 
 # Git
 git status                              # Check changes
-git diff                               # Review modifications
+git diff                                # Review modifications
 ```
 
 ## Data Flow Overview
 
 ```
-Input/ → Filter (会議費/接待費) → Estimate (2-8 attendees) → Sample IDs → Output/ + Archive/
+Input/ → Encoding Detection → Filter (会議費/接待費) →
+Estimate (2-8) → Sample IDs (90/10) → CSV + HTML → Output/
 ```
 
 1. **Input**: CSV files with Japanese transaction data
-2. **Filter**: Select only meeting/entertainment expenses
-3. **Estimate**: Random 2-8 attendees per transaction
-4. **Sample**: 90% ID '2', 10% ID '1', rest random
-5. **Output**: Enhanced CSV + HTML report
-6. **Archive**: Move processed files by month
+2. **Encoding**: Auto-detect (UTF-8 BOM → UTF-8 → CP932)
+3. **Filter**: Select only meeting/entertainment expenses (備考 column)
+4. **Estimate**: Random 2-8 attendees per transaction
+5. **Sample**: 90% ID '2', 10% ID '1', rest random from reference
+6. **Output**: Enhanced CSV (UTF-8 BOM) + HTML report
+7. **Archive**: (Phase 3) Move processed files by month
 
 ## Project Conventions
 
 - **TDD First**: Write tests before implementation
 - **OpenSpec**: Check specs before coding
-- **Coverage**: Maintain ≥90% line coverage
-- **Encoding**: UTF-8 BOM for outputs
+- **Coverage**: Maintain ≥90% line coverage (current: 91.55%)
+- **Encoding**: UTF-8 BOM for outputs, auto-detect for inputs
 - **Paths**: Relative from project root
 - **IDs**: Treat as integers, sort numerically
 
 ## Common Tasks
 
-### Continue Phase 2 Development
+### Run the Pipeline
+
 ```bash
 cd /Users/frank/Projects/saisonxform
 poetry shell
-openspec show plan-data-pipeline
-# Start with tests/test_io.py
+
+# Basic usage (uses config.toml paths)
+poetry run saisonxform process
+
+# Custom paths
+poetry run saisonxform process \
+  --input /path/to/Input \
+  --reference /path/to/Reference \
+  --output /path/to/Output
 ```
 
-### Run Pipeline (Future)
-```bash
-poetry run saisonxform process --month 202510
-poetry run saisonxform process --input ../Input --output ../Output
-```
+### Check Test Coverage
 
-### Check Test Coverage (Future)
 ```bash
 poetry run pytest --cov=saisonxform --cov-report=html
 open htmlcov/index.html
 ```
 
+### Run Specific Tests
+
+```bash
+# Single test file
+poetry run pytest tests/test_selectors.py -v
+
+# Single test function
+poetry run pytest tests/test_selectors.py::test_weighted_id_selection -v
+
+# All integration tests
+poetry run pytest tests/test_integration.py -v
+```
+
+### Format and Lint Code
+
+```bash
+# Format with Black
+poetry run black . --line-length 120
+
+# Check formatting without changes
+poetry run black . --check
+
+# Lint with Ruff
+poetry run ruff check --fix
+```
+
 ## Need Help?
 
-1. Check `docs/spec.txt` for requirements
-2. Review `openspec/changes/` for implementation plans
-3. See `README.md` for detailed documentation
-4. Check `docs/sessions/` for previous work context
+1. Check `README.md` for comprehensive documentation
+2. Review `docs/spec.txt` for original requirements
+3. See `docs/sessions/` for development history
+4. Check `openspec/archive/` for completed change proposals
+5. Review test files for usage examples
 
 ## Current Focus
 
-**Immediate Priority**: Start Phase 2 TDD implementation
-1. Create `tests/test_io.py` with encoding detection tests
-2. Implement `src/saisonxform/io.py` to pass tests
-3. Continue with selectors, reporting modules
-4. Achieve ≥90% coverage before moving on
+**Immediate Priority**: Plan Phase 3 archival workflow
+1. Create OpenSpec change proposal for archival features
+2. Implement per-file archival to Archive/YYYYMM/
+3. Add retry marker creation/cleanup
+4. Add already-processed month detection with --force flag
+5. Write comprehensive tests for archival logic
+
+## Troubleshooting
+
+**Tests fail with import errors:**
+```bash
+poetry install  # Reinstall dependencies
+poetry shell    # Ensure virtualenv is active
+```
+
+**Encoding errors when processing CSV:**
+- Check file encoding with: `file -I your_file.csv`
+- Pipeline tries UTF-8 BOM → UTF-8 → CP932 automatically
+- Add more fallbacks in `io.py` if needed
+
+**Coverage below 90%:**
+- Run: `poetry run pytest --cov=saisonxform --cov-report=term-missing`
+- Focus on untested branches (see "Missing" column)
+- Add edge case tests for uncovered lines

@@ -5,6 +5,124 @@ This log captures key architectural and implementation decisions made during the
 
 ## Decisions
 
+### 2025-11-07: Chardet Library for Encoding Detection
+
+**Decision**: Use chardet library with 0.7 confidence threshold and fallback chain
+**Status**: Implemented
+**Context**: Phase 2 CSV I/O - need robust handling of mixed Japanese encodings
+
+**Alternatives Considered**:
+1. Trial-and-error with multiple encodings
+2. Only CP932 (legacy Windows Japanese)
+3. Only UTF-8 variants
+4. Manual encoding specification via CLI
+
+**Rationale**:
+- Japanese CSV files use inconsistent encodings (CP932, UTF-8, UTF-8 BOM)
+- Chardet provides statistical confidence scores
+- Fallback chain (UTF-8 BOM → UTF-8 → CP932) handles detection failures
+- More reliable than pure trial-and-error
+
+**Trade-offs**:
+- ✅ Robust handling of real-world data
+- ✅ Automatic detection (no user input needed)
+- ✅ Statistical confidence scoring
+- ❌ External dependency (chardet library)
+- ❌ Slight performance overhead
+
+**Impact**: High - affects all CSV input processing
+
+---
+
+### 2025-11-07: Weighted ID Sampling (90/10 Split)
+
+**Decision**: First attendee slot has 90% probability of ID '2', 10% of ID '1'
+**Status**: Implemented
+**Context**: Phase 2 attendee selection - business requirement for primary contact weighting
+
+**Alternatives Considered**:
+1. Pure random sampling (equal probability)
+2. Hardcoded ID '2' always first
+3. User-configurable probability distribution
+4. Amount-based weighting logic
+
+**Rationale**:
+- Reflects organizational hierarchy (ID '2' is typical primary contact)
+- Randomization provides realistic variance
+- Config-driven for easy adjustment
+- Tested with statistical verification (1000 trials)
+
+**Trade-offs**:
+- ✅ Realistic distribution matching business patterns
+- ✅ Configurable via config.toml
+- ✅ Statistically validated
+- ❌ More complex testing (statistical verification needed)
+- ❌ Less predictable than hardcoded approach
+
+**Impact**: Medium - affects attendee selection algorithm
+
+---
+
+### 2025-11-07: Per-File Error Isolation
+
+**Decision**: Continue processing remaining files even if one fails
+**Status**: Implemented
+**Context**: Phase 2 batch processing - need resilient handling of corrupt/malformed files
+
+**Alternatives Considered**:
+1. Fail-fast (abort on first error)
+2. Collect errors then fail at end
+3. Separate error queue for retry
+4. Skip errors silently
+
+**Rationale**:
+- Batch processing shouldn't fail entirely due to one corrupt file
+- Users can see which files succeeded and which failed
+- Enables partial batch completion
+- Better UX for large batches
+
+**Trade-offs**:
+- ✅ Better user experience
+- ✅ Enables partial batch completion
+- ✅ Clear error reporting per file
+- ❌ Need comprehensive error reporting
+- ❌ More complex workflow logic
+
+**Impact**: High - core to production batch processing reliability
+
+---
+
+### 2025-11-07: TDD/BDD Approach with 90% Coverage
+
+**Decision**: Write tests first, achieve ≥90% line coverage
+**Status**: Implemented (achieved 91.55%)
+**Context**: Phase 2 quality assurance - financial data processing requires high reliability
+
+**Alternatives Considered**:
+1. Industry standard 80% coverage
+2. 100% coverage requirement
+3. Write tests after implementation
+4. No formal coverage requirement
+
+**Rationale**:
+- Financial data processing requires high reliability
+- 90% balances quality with practicality
+- Encourages test-first development
+- Catches edge cases early
+- Safe refactoring with test safety net
+
+**Trade-offs**:
+- ✅ Higher code quality and confidence
+- ✅ Better edge case coverage
+- ✅ Fewer production bugs
+- ✅ Safe refactoring
+- ❌ Longer initial development time
+- ❌ May require creative test design
+
+**Impact**: High - affects all development workflow, achieved 91.55% coverage
+
+---
+
 ### 2025-11-07: Poetry with External Virtualenv
 
 **Decision**: Use Poetry's default external virtualenv location instead of in-project
@@ -89,38 +207,10 @@ This log captures key architectural and implementation decisions made during the
 
 ---
 
-### 2025-11-07: 90% Test Coverage Requirement
-
-**Decision**: Enforce ≥90% line coverage for saisonxform package
-**Status**: Configured (not yet achieved)
-**Context**: Quality assurance standards for Phase 2
-
-**Alternatives Considered**:
-1. Industry standard 80% coverage
-2. 100% coverage requirement
-3. No formal coverage requirement
-
-**Rationale**:
-- Financial data processing requires high reliability
-- 90% balances quality with practicality
-- Encourages TDD/BDD approach
-- Catches edge cases early
-
-**Trade-offs**:
-- ✅ Higher code quality
-- ✅ Better test coverage
-- ✅ Fewer production bugs
-- ❌ More development time
-- ❌ May require test complexity
-
-**Impact**: High - affects all development workflow
-
----
-
 ### 2025-11-07: Per-File Archival Strategy
 
 **Decision**: Archive each file immediately after successful processing
-**Status**: Planned for Phase 2
+**Status**: Planned for Phase 3
 **Context**: Handling partial batch failures gracefully
 
 **Alternatives Considered**:
@@ -148,7 +238,7 @@ This log captures key architectural and implementation decisions made during the
 ### 2025-11-07: UTF-8 BOM Output Encoding
 
 **Decision**: Always write output files with UTF-8 BOM (utf-8-sig)
-**Status**: Configured
+**Status**: Implemented
 **Context**: Japanese text compatibility requirements
 
 **Alternatives Considered**:
