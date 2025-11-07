@@ -20,9 +20,7 @@ else:
     try:
         import tomli as tomllib
     except ImportError:
-        raise ImportError(
-            "tomli is required for Python < 3.11. Install with: pip install tomli"
-        )
+        raise ImportError("tomli is required for Python < 3.11. Install with: pip install tomli")
 
 
 class Config:
