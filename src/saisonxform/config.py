@@ -9,9 +9,20 @@ All paths are resolved relative to the project root for relative paths.
 """
 
 import os
-import tomllib
+import sys
 from pathlib import Path
 from typing import Any, Optional
+
+# Python 3.10 compatibility: use tomli for older versions
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        raise ImportError(
+            "tomli is required for Python < 3.11. Install with: pip install tomli"
+        )
 
 
 class Config:

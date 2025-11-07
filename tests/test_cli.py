@@ -469,6 +469,7 @@ class TestCLIProcessingErrors:
 
         # Make output directory read-only to trigger permission error
         import os
+
         os.chmod(output_dir, 0o444)
 
         try:
