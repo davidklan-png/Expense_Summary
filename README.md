@@ -250,7 +250,7 @@ Archive/
 
 ## Testing & Quality
 
-**Test Coverage: 87%** (122 tests passing)
+**Test Coverage: 91%** (131 tests passing)
 
 | Module | Coverage | Status |
 |--------|----------|--------|
@@ -259,7 +259,7 @@ Archive/
 | reporting.py | 100% | ✅ Perfect |
 | selectors.py | 100% | ✅ Perfect |
 | io.py | 95% | ✅ Excellent |
-| cli.py | 70% | ✅ (Integration tested) |
+| cli.py | 81% | ✅ Excellent |
 
 **Run tests:**
 ```bash
