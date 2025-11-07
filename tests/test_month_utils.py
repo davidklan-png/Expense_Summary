@@ -1,7 +1,9 @@
 """Tests for month_utils module."""
 
 import json
+import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 from saisonxform.month_utils import (
     archive_file,
@@ -333,6 +335,38 @@ class TestArchiveFile:
             raise AssertionError("Should have raised FileNotFoundError")
         except FileNotFoundError as e:
             assert "Source file not found" in str(e)
+
+    def test_archive_cross_filesystem_fallback(self, tmp_path):
+        """Should fallback to copy+delete when move fails."""
+        input_file = tmp_path / "202510_test.csv"
+        input_file.write_text("test data", encoding="utf-8")
+        archive_dir = tmp_path / "Archive"
+
+        # Mock shutil.move to raise OSError (simulating cross-filesystem move)
+        with patch("shutil.move", side_effect=OSError("Cross-device link")):
+            # This should trigger copy+delete fallback
+            result = archive_file(input_file, archive_dir, "202510")
+
+        # File should still be archived successfully
+        assert not input_file.exists()
+        assert result.exists()
+        assert result.read_text(encoding="utf-8") == "test data"
+
+    def test_archive_copy_fallback_fails(self, tmp_path):
+        """Should raise OSError when both move and copy fail."""
+        input_file = tmp_path / "202510_test.csv"
+        input_file.write_text("test data", encoding="utf-8")
+        archive_dir = tmp_path / "Archive"
+
+        # Mock both move and copy to fail
+        with patch("shutil.move", side_effect=OSError("Move failed")), patch(
+            "shutil.copy2", side_effect=PermissionError("Copy failed")
+        ):
+            try:
+                archive_file(input_file, archive_dir, "202510")
+                raise AssertionError("Should have raised OSError")
+            except OSError as e:
+                assert "Failed to archive file" in str(e)
 
 
 class TestCreateRetryMarker:

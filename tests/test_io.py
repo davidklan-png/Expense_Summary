@@ -45,6 +45,19 @@ class TestEncodingDetection:
         # Should return one of the fallback encodings
         assert encoding in ["utf-8-sig", "utf-8", "cp932", "ascii", "ASCII"]
 
+    def test_detect_encoding_fallback_on_chardet_exception(self, tmp_path):
+        """Should use fallback when chardet raises an exception."""
+        from unittest.mock import patch
+
+        test_file = tmp_path / "test.csv"
+        test_file.write_text("test", encoding="utf-8")
+
+        # Mock chardet.detect to raise an exception
+        with patch("chardet.detect", side_effect=Exception("Unexpected error")):
+            encoding = detect_encoding(test_file)
+            # Should fallback to utf-8-sig
+            assert encoding == "utf-8-sig"
+
 
 class TestHeaderDetection:
     """Test header row detection logic."""
@@ -121,6 +134,22 @@ class TestCSVReading:
         assert df.empty
         assert encoding is not None
 
+    def test_read_csv_all_encodings_fail(self, tmp_path):
+        """Should raise ValueError when all encodings fail."""
+        from unittest.mock import patch
+
+        test_file = tmp_path / "test.csv"
+        test_file.write_text("test,data\n1,2", encoding="utf-8")
+
+        # Mock pd.read_csv to always fail
+        with patch("pandas.read_csv", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "fail")):
+            try:
+                read_csv_with_detection(test_file)
+                raise AssertionError("Should have raised ValueError")
+            except ValueError as e:
+                assert "Failed to read" in str(e)
+                assert "with any encoding" in str(e)
+
 
 class TestCSVWriting:
     """Test CSV writing with UTF-8 BOM."""
@@ -142,6 +171,23 @@ class TestCSVWriting:
         df_read = pd.read_csv(output_file, encoding="utf-8-sig")
         assert len(df_read) == 1
         assert df_read["店舗"].iloc[0] == "テスト店舗"
+
+    def test_write_csv_handles_multiple_duplicates(self, tmp_path):
+        """Should increment counter for multiple duplicate filenames."""
+        output_file = tmp_path / "output.csv"
+        df = pd.DataFrame({"col": [1, 2, 3]})
+
+        # Create three files with same base name
+        paths = []
+        for i in range(3):
+            path = write_csv_utf8_bom(df, output_file, handle_duplicates=(i > 0))
+            paths.append(path)
+
+        # Check all three were created with incrementing suffixes
+        assert paths[0].stem == "output"
+        assert paths[1].stem == "output_2"
+        assert paths[2].stem == "output_3"
+        assert all(p.exists() for p in paths)
 
     def test_write_csv_handles_duplicate_filenames(self, tmp_path):
         """Should append suffix for duplicate filenames."""

@@ -159,6 +159,35 @@ class TestAttendeeIDSampling:
         non_empty = [id_str for id_str in ids if id_str]
         assert len(non_empty) <= 2
 
+    def test_sample_zero_count(self):
+        """Should return all empty strings when count is 0."""
+        available_ids = ["1", "2", "3"]
+
+        ids = sample_attendee_ids(count=0, available_ids=available_ids)
+
+        assert len(ids) == 8
+        assert all(id_str == "" for id_str in ids)
+
+    def test_sample_negative_count(self):
+        """Should return all empty strings when count is negative."""
+        available_ids = ["1", "2", "3"]
+
+        ids = sample_attendee_ids(count=-1, available_ids=available_ids)
+
+        assert len(ids) == 8
+        assert all(id_str == "" for id_str in ids)
+
+    def test_sample_no_weighted_ids(self):
+        """Should sample randomly when neither ID '1' nor '2' available."""
+        available_ids = ["3", "4", "5", "6"]
+
+        ids = sample_attendee_ids(count=3, available_ids=available_ids, id_1_weight=0.1, id_2_weight=0.9)
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 3
+        # Should only contain IDs from available pool
+        assert all(id_str in available_ids for id_str in non_empty)
+
 
 class TestIDDictionaryFormat:
     """Test ID dictionary output format."""

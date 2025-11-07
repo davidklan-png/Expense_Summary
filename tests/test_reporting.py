@@ -221,6 +221,28 @@ class TestHTMLReportGeneration:
         assert path1.exists()
         assert path2.exists()
 
+    def test_generate_html_handles_multiple_duplicates(self, tmp_path, sample_transactions, attendee_reference):
+        """Should increment counter for multiple duplicate filenames."""
+        output_file = tmp_path / "report.html"
+
+        # Generate three reports with same base filename
+        paths = []
+        for i in range(3):
+            path = generate_html_report(
+                transactions=sample_transactions,
+                attendee_reference=attendee_reference,
+                output_path=output_file,
+                source_filename="test.csv",
+                handle_duplicates=(i > 0),  # First one doesn't need handle_duplicates
+            )
+            paths.append(path)
+
+        # Check all three were created with incrementing suffixes
+        assert paths[0].stem == "report"
+        assert paths[1].stem == "report_2"
+        assert paths[2].stem == "report_3"
+        assert all(p.exists() for p in paths)
+
     def test_generate_html_with_empty_transactions(self, tmp_path, attendee_reference):
         """Should handle empty transactions gracefully."""
         empty_df = pd.DataFrame(

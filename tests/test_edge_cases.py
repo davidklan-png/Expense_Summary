@@ -135,6 +135,47 @@ class TestReportingEdgeCases:
 class TestConfigEdgeCases:
     """Test configuration edge cases."""
 
+    def test_config_directory_setters(self, tmp_path):
+        """Should allow setting directory overrides."""
+        from saisonxform.config import Config
+
+        config = Config(project_root=tmp_path)
+
+        # Set directory overrides
+        new_input = tmp_path / "CustomInput"
+        new_reference = tmp_path / "CustomReference"
+        new_output = tmp_path / "CustomOutput"
+        new_archive = tmp_path / "CustomArchive"
+
+        config.input_dir = new_input
+        config.reference_dir = new_reference
+        config.output_dir = new_output
+        config.archive_dir = new_archive
+
+        # Verify overrides are used
+        assert config.input_dir == new_input
+        assert config.reference_dir == new_reference
+        assert config.output_dir == new_output
+        assert config.archive_dir == new_archive
+
+    def test_config_directory_override_precedence(self, tmp_path, monkeypatch):
+        """Should prioritize CLI overrides over config values."""
+        from saisonxform.config import Config
+
+        # Set environment variable
+        monkeypatch.setenv("INPUT_DIR", str(tmp_path / "EnvInput"))
+
+        config = Config(project_root=tmp_path)
+
+        # Env var should be used initially
+        assert "EnvInput" in str(config.input_dir)
+
+        # CLI override should take precedence
+        cli_override = tmp_path / "CLIInput"
+        config.input_dir = cli_override
+
+        assert config.input_dir == cli_override
+
     def test_config_with_relative_paths(self, tmp_path, monkeypatch):
         """Should resolve relative paths correctly."""
         from saisonxform.config import Config
@@ -179,3 +220,70 @@ class TestConfigEdgeCases:
         # Should have default relative paths
         assert config.input_dir.name == "Input"
         assert config.output_dir.name == "Output"
+
+    def test_config_with_explicit_config_file(self, tmp_path):
+        """Should use explicitly provided config file."""
+        from saisonxform.config import Config
+
+        # Create custom config file
+        custom_config = tmp_path / "custom_config.toml"
+        custom_config.write_text(
+            """
+[paths]
+input_dir = "CustomInput"
+output_dir = "CustomOutput"
+""",
+            encoding="utf-8",
+        )
+
+        config = Config(project_root=tmp_path, config_file=custom_config)
+
+        # Should use paths from custom config
+        assert "CustomInput" in str(config.input_dir)
+        assert "CustomOutput" in str(config.output_dir)
+
+    def test_config_get_method(self, tmp_path):
+        """Should allow getting config values by key."""
+        from saisonxform.config import Config
+
+        config = Config(project_root=tmp_path)
+
+        # Test attributes (already set during init)
+        assert config.min_attendees == 2
+        assert config.max_attendees == 8
+
+        # Test .get() method with internal _config dict
+        assert config.get("nonexistent_key", "default_value") == "default_value"
+
+        # Add a value to internal _config and retrieve it
+        config._config["test_key"] = "test_value"
+        assert config.get("test_key") == "test_value"
+
+    def test_config_validate_templates_directory_missing(self, tmp_path):
+        """Should raise FileNotFoundError when templates directory missing."""
+        from saisonxform.config import Config
+
+        config = Config(project_root=tmp_path)
+
+        try:
+            config.validate_templates(templates_dir=tmp_path / "nonexistent_templates")
+            raise AssertionError("Should have raised FileNotFoundError")
+        except FileNotFoundError as e:
+            assert "Templates directory not found" in str(e)
+
+    def test_config_validate_templates_file_missing(self, tmp_path):
+        """Should raise FileNotFoundError when template file missing."""
+        from saisonxform.config import Config
+
+        # Create templates directory but no files
+        templates_dir = tmp_path / "templates"
+        templates_dir.mkdir()
+
+        config = Config(project_root=tmp_path)
+
+        try:
+            config.validate_templates(templates_dir=templates_dir)
+            raise AssertionError("Should have raised FileNotFoundError")
+        except FileNotFoundError as e:
+            assert "Required template files not found" in str(e)
+            assert "report.html.j2" in str(e)
