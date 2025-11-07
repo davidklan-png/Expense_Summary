@@ -40,7 +40,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## Testing Guidelines
 - Use `pytest` with fixtures that load lightweight CSV slices from `tests/data/` so selectors stay deterministic.
 - Name tests after the behavior under scrutiny (e.g., `test_estimate_attendees_caps_at_eight`).
-- Target ≥85% branch coverage for `saisonxform.pipeline`; add regression tests whenever a bugfix touches parsing, encoding detection, or attendee selection weights.
+- Target ≥90% line coverage for the entire `saisonxform` package; add regression tests whenever a bugfix touches parsing, encoding detection, or attendee selection weights.
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commits (`feat: add attendee sampler`, `fix: handle missing headers`) so changelog generation remains trivial.

@@ -1,6 +1,6 @@
 # Evidence & Definition of Done
 
-For each Phase 1 task, capture proof in this file (links to diffs, command outputs, or screenshots). Update the checklist with a short summary and the evidence location.
+Use this file to prove each planning task was completed (during planning now, during implementation later). Reference diffs, command outputs, or screenshots so reviewers can trace compliance.
 
 - Phase1-1 evidence:
 - Phase1-2 evidence:
