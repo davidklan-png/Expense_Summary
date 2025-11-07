@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "saisonxform"
+version = "0.1.0"
+description = "Process financial transaction CSV files to identify meeting/entertainment expenses and assign attendees"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "saisonxform", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10,<3.14"
+pandas = "^2.2.0"
+numpy = "^2.0.0"
+chardet = "^5.0.0"
+jinja2 = "^3.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+black = "^23.0.0"
+ruff = "^0.1.0"
+isort = "^5.12.0"
+
+[tool.poetry.scripts]
+saisonxform = "saisonxform.cli:main"
+
+[tool.saisonxform]
+# Default configuration (can be overridden by config.toml or environment variables)
+# Config precedence: env vars > config.toml > pyproject.toml [tool.saisonxform]
+input_dir = "../Input"
+reference_dir = "../Reference"
+output_dir = "../Output"
+archive_dir = "../Archive"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=saisonxform",
+    "--cov-report=term-missing",
+    "--cov-fail-under=90"
+]
+
+[tool.isort]
+profile = "black"
+line_length = 120

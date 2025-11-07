@@ -1,0 +1,55 @@
+# Saison Transform Configuration
+#
+# Configuration precedence order:
+#   1. Environment variables (INPUT_DIR, REFERENCE_DIR, OUTPUT_DIR, ARCHIVE_DIR)
+#   2. This config.toml file
+#   3. pyproject.toml [tool.saisonxform] section
+#
+# Paths can be:
+#   - Relative (resolved from project root): "../Input"
+#   - Absolute: "/Users/username/Data/Input"
+#
+# Directory requirements:
+#   - Input/, Reference/, Output/ must pre-exist (validated at startup)
+#   - Archive/ is optional (auto-created on first use)
+
+[paths]
+# Raw CSV files from credit card statements
+input_dir = "../Input"
+
+# Reference data (NameList.csv, rule sheets)
+reference_dir = "../Reference"
+
+# Generated CSV and HTML reports
+output_dir = "../Output"
+
+# Processed files archived by month (YYYYMM subfolders)
+archive_dir = "../Archive"
+
+[processing]
+# Attendee estimation bounds (uniform random distribution)
+min_attendees = 2
+max_attendees = 8
+
+# Attendee ID sampling weights (90% ID '2', 10% ID '1')
+primary_id_weights = { "2" = 0.9, "1" = 0.1 }
+
+# Maximum attendees per transaction (ID1 through ID8)
+max_attendee_slots = 8
+
+[output]
+# Output file encoding (utf-8-sig = UTF-8 with BOM)
+encoding = "utf-8-sig"
+
+# Sequential numbering for duplicate filenames
+enable_sequential_numbering = true
+
+[archival]
+# Archive processed files immediately after successful processing
+enable_archival = true
+
+# Create retry markers for failed archival operations
+enable_retry_markers = true
+
+# Already-processed month protection (requires --force to override)
+protect_processed_months = true
