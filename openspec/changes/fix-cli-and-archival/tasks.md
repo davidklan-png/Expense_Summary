@@ -32,14 +32,15 @@
 - [x] Integrate month filtering into CLI run command
 - [x] Add verbose logging for month selection process
 
-## Phase 3: Archival Workflow
+## Phase 3: Archival Workflow ✅ COMPLETE
 
-- [ ] Implement `archive_file()` to move file to Archive/YYYYMM/
-- [ ] Add auto-creation of Archive/ and YYYYMM/ subdirectories
-- [ ] Implement retry marker creation (`.retry_YYYYMM.json`)
-- [ ] Implement retry marker cleanup on full month success
-- [ ] Add error handling for cross-filesystem moves and permissions
-- [ ] Add per-file archival (immediate move after successful processing)
+- [x] Implement `archive_file()` to move file to Archive/YYYYMM/
+- [x] Add auto-creation of Archive/ and YYYYMM/ subdirectories
+- [x] Implement retry marker creation (`.retry_YYYYMM.json`)
+- [x] Implement retry marker cleanup on full month success
+- [x] Add error handling for cross-filesystem moves and permissions
+- [x] Add per-file archival (immediate move after successful processing)
+- [x] Add 11 comprehensive tests for archival functions (94% month_utils coverage)
 
 ## Phase 4: CSV Preservation
 
