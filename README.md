@@ -18,7 +18,7 @@ Financial transaction processor for identifying meeting and entertainment expens
 
 ```bash
 # 1. Clone repository
-git clone <repository-url>
+git clone git@github.com:davidklan-png/Expense_Summary.git saisonxform
 cd saisonxform
 
 # 2. Install dependencies with Poetry
