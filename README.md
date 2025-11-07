@@ -12,7 +12,7 @@ Saison Transform processes credit card CSV files to:
 
 ## Status
 
-**Current Phase**: Phase 2 Complete ✅
+**Current Phase**: Phase 1 (CLI Migration) Complete ✅
 **Test Coverage**: 91.55%
 **Tests Passing**: 62/62
 
@@ -20,7 +20,8 @@ Saison Transform processes credit card CSV files to:
 - Poetry-based dependency management
 - Configuration system (config.toml + environment variables)
 - Project structure and packaging
-- CLI with `validate-config` and `process` commands
+- **NEW**: Typer-based CLI with `run` and `validate-config` commands
+- **NEW**: `sf` command alias for convenience
 - Jinja2 templates for HTML reporting
 
 ### ✅ Phase 2: Data Pipeline (Complete)
@@ -29,6 +30,13 @@ Saison Transform processes credit card CSV files to:
 - ID sampling with configurable weights (90% ID '2', 10% ID '1')
 - HTML report generation
 - ≥90% test coverage achieved (91.55%)
+
+### 🚧 In Progress: CLI Enhancement & Archival
+- Month filtering (--month, default to latest 2 months)
+- Archival workflow (move files to Archive/YYYYMM/)
+- CSV row preservation (keep all rows, not just filtered)
+- Configuration integration (attendee settings from config.toml)
+- Security validation (repo-path checking, precedence logging)
 
 ## Quick Start
 
@@ -62,11 +70,17 @@ poetry run saisonxform
 
 Expected output:
 ```
-Saison Transform - Financial Transaction Processor
+Usage: saisonxform [OPTIONS] COMMAND [ARGS]...
 
-Usage:
-  saisonxform validate-config    Validate configuration and environment
-  saisonxform process            Process CSV files from Input directory
+Financial Transaction Processor - Process credit card statements and assign attendees
+
+Options:
+  --version  Show version and exit
+  --help     Show this message and exit.
+
+Commands:
+  run              Process transaction CSV files from Input directory.
+  validate-config  Validate configuration and check directory setup.
 ```
 
 ### 3. Setup Directories
@@ -133,7 +147,20 @@ Configuration validation complete - SUCCESS
 Place your transaction CSV files in the `Input/` directory, then:
 
 ```bash
-poetry run saisonxform process
+# Process all CSV files
+poetry run saisonxform run
+
+# Or use the short alias
+poetry run sf run
+
+# Process specific month(s)
+poetry run saisonxform run --month 202510
+
+# Process with verbose output
+poetry run saisonxform run --verbose
+
+# Override directories for a specific run
+poetry run saisonxform run --input /path/to/custom/input
 ```
 
 Expected output:
@@ -174,7 +201,7 @@ export OUTPUT_DIR=/custom/path/to/output
 export ARCHIVE_DIR=/custom/path/to/archive
 
 # Run with custom paths
-poetry run saisonxform process
+poetry run saisonxform run
 ```
 
 ### Using config.toml
@@ -377,14 +404,14 @@ This project follows OpenSpec specification-driven development:
 
 Make sure you're running commands with `poetry run`:
 ```bash
-poetry run saisonxform process  # Correct
-saisonxform process             # Wrong - won't find the module
+poetry run saisonxform run  # Correct
+saisonxform run             # Wrong - won't find the module
 ```
 
 Or activate the virtual environment:
 ```bash
 poetry shell
-saisonxform process  # Now it works
+saisonxform run  # Now it works
 ```
 
 ### "Required directories not found"

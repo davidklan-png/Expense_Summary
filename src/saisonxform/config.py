@@ -17,18 +17,21 @@ from typing import Dict, Any, Optional
 class Config:
     """Configuration manager with precedence-based loading."""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None, config_file: Optional[Path] = None):
         """Initialize configuration.
 
         Args:
             project_root: Project root directory (defaults to parent of this file's grandparent)
+            config_file: Optional path to config.toml file (overrides default location)
         """
         if project_root is None:
             # Determine project root: src/saisonxform/config.py -> go up 2 levels
             project_root = Path(__file__).parent.parent.parent
 
         self.project_root = project_root
+        self.config_file = config_file
         self._config: Dict[str, Any] = {}
+        self._dir_overrides: Dict[str, Path] = {}  # CLI overrides for directories
         self._load_config()
 
     def _load_config(self) -> None:
@@ -42,7 +45,13 @@ class Config:
                     self._config.update(pyproject_data["tool"]["saisonxform"])
 
         # Override with config.toml if present
-        config_toml_path = self.project_root / "config.toml"
+        if self.config_file:
+            # Use explicitly provided config file
+            config_toml_path = self.config_file
+        else:
+            # Use default location
+            config_toml_path = self.project_root / "config.toml"
+
         if config_toml_path.exists():
             with open(config_toml_path, "rb") as f:
                 config_data = tomllib.load(f)
@@ -79,22 +88,50 @@ class Config:
     @property
     def input_dir(self) -> Path:
         """Get resolved input directory path."""
+        if "input_dir" in self._dir_overrides:
+            return self._dir_overrides["input_dir"]
         return self._resolve_path(self._config.get("input_dir", "../Input"))
+
+    @input_dir.setter
+    def input_dir(self, value: Path) -> None:
+        """Set input directory override."""
+        self._dir_overrides["input_dir"] = value
 
     @property
     def reference_dir(self) -> Path:
         """Get resolved reference directory path."""
+        if "reference_dir" in self._dir_overrides:
+            return self._dir_overrides["reference_dir"]
         return self._resolve_path(self._config.get("reference_dir", "../Reference"))
+
+    @reference_dir.setter
+    def reference_dir(self, value: Path) -> None:
+        """Set reference directory override."""
+        self._dir_overrides["reference_dir"] = value
 
     @property
     def output_dir(self) -> Path:
         """Get resolved output directory path."""
+        if "output_dir" in self._dir_overrides:
+            return self._dir_overrides["output_dir"]
         return self._resolve_path(self._config.get("output_dir", "../Output"))
+
+    @output_dir.setter
+    def output_dir(self, value: Path) -> None:
+        """Set output directory override."""
+        self._dir_overrides["output_dir"] = value
 
     @property
     def archive_dir(self) -> Path:
         """Get resolved archive directory path."""
+        if "archive_dir" in self._dir_overrides:
+            return self._dir_overrides["archive_dir"]
         return self._resolve_path(self._config.get("archive_dir", "../Archive"))
+
+    @archive_dir.setter
+    def archive_dir(self, value: Path) -> None:
+        """Set archive directory override."""
+        self._dir_overrides["archive_dir"] = value
 
     def validate_directories(self) -> None:
         """Validate that required directories exist.
