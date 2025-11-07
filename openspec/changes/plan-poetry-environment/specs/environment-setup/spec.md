@@ -14,9 +14,10 @@ The repository MUST use Poetry to manage dependencies for the `saisonxform` proj
 ### Requirement: Configurable External Data Folders
 The application MUST reference four sibling folders—`Input/`, `Reference/`, `Output/`, and `Archive/`—via configuration stored in `config.toml` at the repository root using relative paths resolved from the repo directory, while also permitting absolute paths and environment-variable overrides.
 
+#### Scenario: Config resolution and validation
 - **GIVEN** `config.toml` contains entries `input_dir = "../Input"`, `reference_dir = "../Reference"`, `output_dir = "../Output"`, `archive_dir = "../Archive"`
 - **WHEN** the CLI loads configuration
-- **THEN** it resolves each path relative to the project root, verifies the directory exists outside the repo, and exposes the absolute paths to the business logic.
+- **THEN** it resolves each path relative to the project root, verifies that `Input/`, `Reference/`, and `Output/` exist (failing if missing), treats `Archive/` as optional (auto-created on first use), and exposes the absolute paths to the business logic.
 
 #### Scenario: Absolute paths and env overrides
 - **WHEN** a user supplies absolute paths in `config.toml` or exports `INPUT_DIR`, `REFERENCE_DIR`, `OUTPUT_DIR`, or `ARCHIVE_DIR`

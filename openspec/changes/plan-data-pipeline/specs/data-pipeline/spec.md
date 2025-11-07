@@ -113,15 +113,42 @@ Default month processing MUST operate on filename prefixes shaped as `YYYYMM*`, 
 - **THEN** the CLI logs a warning and skips them unless explicit `--month` flags were provided that match the ambiguous files.
 
 ### Requirement: Post-Processing Archival
-After successfully processing a month's CSVs, the raw files MUST be moved from `Input/` to the configured `Archive/` directory to prevent reprocessing the same month.
+After successfully processing individual CSVs, each raw file MUST be moved from `Input/` to the configured `Archive/` directory to prevent reprocessing; the `Archive/` directory is auto-created if it does not exist.
 
-#### Scenario: Archive by month
-- **WHEN** month `202510` is processed (either via default selection or explicit `--month 202510`)
-- **THEN** all input files matching `202510*.csv` are moved into `Archive/202510/`, creating the subdirectory if needed, and the CLI logs the destination.
+#### Scenario: Per-file archival granularity
+- **WHEN** a file (e.g., `202510_A.csv`) is successfully processed
+- **THEN** that specific file is immediately moved to `Archive/202510/202510_A.csv`, creating both `Archive/` and the month subdirectory if needed, independent of whether other files in the same month succeed or fail.
+
+#### Scenario: Partial month processing
+- **WHEN** processing month `202510` with 5 input files, where 4 succeed and 1 fails
+- **THEN** the 4 successful files are archived to `Archive/202510/`, the 1 failed file remains in `Input/`, and a retry marker file `Archive/.retry_202510.json` is created containing `{"month": "202510", "failed_files": ["202510_E.csv"], "error": "..."}`.
+
+#### Scenario: Already-archived month detection
+- **WHEN** a user explicitly requests `--month 202510` and `Archive/202510/` exists without a retry marker
+- **THEN** the CLI exits immediately with error status and message "Month 202510 already processed. Use --force to reprocess." without scanning `Input/`.
+
+#### Scenario: Force reprocessing
+- **WHEN** a user passes `--month 202510 --force` and archived files exist
+- **THEN** the CLI processes any matching files found in `Input/`, archives them per normal flow, and logs a warning that this may create duplicate outputs.
+
+#### Scenario: Archive directory auto-creation
+- **WHEN** the first archival operation runs and `Archive/` does not exist
+- **THEN** the CLI creates `Archive/` at the configured path (relative or absolute), logs the creation, and proceeds with archival.
 
 #### Scenario: Archive failure handling
-- **WHEN** archival fails (e.g., permissions)
-- **THEN** the CLI emits an error, leaves a retry marker file in `Archive/` describing which months failed, and exits with non-zero status so operators can intervene before rerunning.
+- **WHEN** archival fails for a file (e.g., permissions, disk full, cross-filesystem move error)
+- **THEN** the CLI emits an error, creates/updates the retry marker file `Archive/.retry_YYYYMM.json` with failure details, leaves the unarchived file in `Input/`, and exits with non-zero status so operators can intervene before rerunning.
+
+### Requirement: Retry Marker Format
+Retry marker files MUST be JSON documents stored as `Archive/.retry_YYYYMM.json` containing structured failure information for operator intervention.
+
+#### Scenario: Marker file structure
+- **WHEN** a retry marker is created for month `202510`
+- **THEN** the file `Archive/.retry_202510.json` contains at minimum: `{"month": "202510", "failed_files": ["filename1.csv", ...], "timestamp": "ISO8601", "errors": [{"file": "filename1.csv", "error": "error message"}]}`.
+
+#### Scenario: Marker cleanup on success
+- **WHEN** all previously failed files in a month are successfully processed and archived
+- **THEN** the corresponding `.retry_YYYYMM.json` file is deleted, signaling full completion.
 
 ### Requirement: Performance and Scalability
 The pipeline MUST handle at least 50 CSV files of up to 10,000 rows each within 5 minutes on a modern laptop (16GB RAM), keeping resident memory under 500MB.

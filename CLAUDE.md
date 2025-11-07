@@ -112,18 +112,21 @@ openspec validate --strict
 **plan-poetry-environment** - Establishes Poetry-based environment with:
 - Project name: `saisonxform`
 - External virtualenvs (default Poetry behavior)
-- Minimal deps: `jinja2`, `pytest`
+- Dependencies: `jinja2`, `pytest`, `pandas`, `numpy`, `chardet`
 - `templates/` directory for Jinja2 templates
-- `config.toml` with paths to Input/Reference/Output folders
+- `config.toml` with paths to Input/Reference/Output/Archive folders
+- Archive/ auto-created on first use (Input/Reference/Output must pre-exist)
 - Must complete before Phase 2 work
 
 **plan-data-pipeline** - Implements core pipeline (Phase 2):
-- Header/encoding detection
-- Transaction filtering by expense category
-- Attendee count estimation (2-4 for ≤10K yen, 4-8 for >10K yen)
-- Weighted ID sampling (90% ID '2', 10% ID '1')
+- Header/encoding detection with fallback chain (utf-8-sig → utf-8 → cp932)
+- Transaction filtering by expense category (會議費/接待費)
+- Randomized attendee count estimation (config-driven min/max bounds)
+- Weighted ID sampling (90% ID '2', 10% ID '1', pure random for remaining)
 - CSV + HTML output with filename parity
-- TDD/BDD first approach with ≥90% coverage requirement
+- Per-file archival workflow with retry markers
+- Already-processed month detection (--force to override)
+- TDD/BDD first approach with ≥90% line coverage requirement
 
 ## Architecture
 
@@ -153,32 +156,40 @@ openspec validate --strict
 ├── tests/                     # Mirror src/ structure
 │   ├── test_selectors.py     # Unit tests for selection logic
 │   └── data/                 # Lightweight CSV fixtures
-├── data/                      # External data folders (gitignored)
-│   └── raw/                  # Input CSV files
-└── dist/                      # Output artifacts (gitignored)
+└── [External folders - configured via config.toml]
+    ├── Input/                # Raw CSV files (must pre-exist)
+    ├── Reference/            # NameList.csv and rule sheets (must pre-exist)
+    ├── Output/               # Generated CSV/HTML artifacts (must pre-exist)
+    └── Archive/              # Month-specific subfolders (auto-created on first use)
+        ├── 202510/           # Processed files for October 2025
+        ├── 202511/           # Processed files for November 2025
+        └── .retry_*.json     # Retry markers for failed archival
 ```
 
 ### Data Flow
-1. **Input**: CSV files in `data/raw/` with columns: 利用日, ご利用店名及び商品名, 利用金額, 備考
-2. **Reference**: `docs/NameList.csv` with attendee details (ID, Name, Title, Company)
+1. **Input**: CSV files from `Input/` folder with columns: 利用日, ご利用店名及び商品名, 利用金額, 備考
+2. **Reference**: `Reference/NameList.csv` with attendee details (ID, Name, Title, Company)
 3. **Processing**:
-   - Auto-detect encoding (chardet)
-   - Locate header row statically/dynamically
+   - Auto-detect encoding (chardet with confidence threshold, fallback: utf-8-sig → utf-8 → cp932)
+   - Scan first 10 rows for header (contains required column names)
    - Filter transactions where 備考 contains '会議費' or '接待費'
-   - Estimate attendees based on 利用金額:
-     - Minimum 2 attendees
-     - ≤10,000 yen: scale 2-4 attendees
-     - >10,000 yen: scale 4-8 attendees
+   - Estimate attendees (config-driven min/max, uniform random within bounds):
+     - Default: random between 2-8 attendees per transaction
+     - Optional amount-based weighting via config
    - Sample attendee IDs:
-     - 90% include ID '2'
-     - 10% include ID '1'
-     - Fill remaining slots with random IDs
-     - Sort numerically
+     - Weighted random: 90% weight for ID '2', 10% for ID '1' (primary slot)
+     - Remaining slots: sample without replacement from reference list
+     - Pad to ID8 with blanks, sort numerically
 4. **Output**:
-   - Processed CSV (original + 出席者 + ID1-ID8 columns)
-   - HTML report (transaction table + unique attendee list)
-   - Files saved to `dist/` with UTF-8 BOM encoding
+   - Processed CSV (original + 出席者 + ID1-ID8 columns) to `Output/`
+   - HTML report (transaction table + unique attendee list) to `Output/`
+   - Files use UTF-8 BOM encoding
    - Sequential numbering for duplicate filenames
+5. **Archival** (per-file, after successful processing):
+   - Move processed file from `Input/` to `Archive/YYYYMM/`
+   - Create `Archive/.retry_YYYYMM.json` on failure
+   - Delete retry marker when all files in month succeed
+   - Already-processed months: Error unless `--force` flag used
 
 ### Key Technical Requirements
 - **Python**: 3.10+
@@ -187,6 +198,32 @@ openspec validate --strict
 - **ID Handling**: Treat as integers, numeric sorting
 - **Error Handling**: Graceful degradation with warnings for missing files, encoding issues, missing columns
 - **Testing**: TDD/BDD approach with ≥90% line coverage for entire `saisonxform` package
+
+### Archival Workflow
+
+**Per-File Archival**: Each successfully processed file moves immediately from `Input/` to `Archive/YYYYMM/`.
+
+**Partial Failure Handling**:
+- 4 of 5 files succeed? → 4 archived, 1 stays in `Input/`
+- Retry marker created: `Archive/.retry_202510.json`
+- Marker contains: `{"month": "202510", "failed_files": [...], "timestamp": "ISO8601", "errors": [...]}`
+
+**Already-Processed Detection**:
+- Request `--month 202510` when `Archive/202510/` exists (no retry marker)?
+- CLI exits with error: "Month 202510 already processed. Use --force to reprocess."
+
+**Force Reprocessing**:
+- Use `--month 202510 --force` to override protection
+- Warns about potential duplicate outputs
+- Useful for testing or corrections
+
+**Retry Marker Cleanup**:
+- When all failed files succeed, delete `.retry_YYYYMM.json`
+- Signals full month completion
+
+**Archive Directory**:
+- Auto-created on first archival operation (no manual setup needed)
+- Input/Reference/Output must pre-exist (validated at startup)
 
 ## Development Workflow
 
