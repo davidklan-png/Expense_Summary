@@ -527,6 +527,91 @@ def main_callback(
             return
 
 
+@app.command()
+def demo(
+    output_dir: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Directory to create demo files (default: ./saisonxform-demo)",
+    ),
+) -> None:
+    """Generate demo files for testing the pipeline.
+
+    Creates a demo directory with sample input files and reference data
+    that can be used to test the saisonxform pipeline.
+    """
+    # Default output directory
+    if output_dir is None:
+        output_dir = Path.cwd() / "saisonxform-demo"
+
+    # Check if directory already exists
+    if output_dir.exists():
+        typer.echo(f"⚠️  Directory already exists: {output_dir}")
+        if not typer.confirm("Overwrite existing demo files?", default=False):
+            typer.echo("Demo generation cancelled.")
+            raise typer.Exit(0)
+
+    # Create directory structure
+    input_dir = output_dir / "Input"
+    reference_dir = output_dir / "Reference"
+    output_result_dir = output_dir / "Output"
+
+    input_dir.mkdir(parents=True, exist_ok=True)
+    reference_dir.mkdir(parents=True, exist_ok=True)
+    output_result_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create sample transaction CSV
+    sample_csv = input_dir / "202510_sample.csv"
+    sample_csv.write_text(
+        """利用日,ご利用店名及び商品名,利用金額,備考
+2025-10-01,東京レストラン,15000,会議費
+2025-10-05,カフェABC,5000,接待費
+2025-10-10,ガソリンスタンド,8000,交通費
+2025-10-15,ホテル会議室,25000,会議費
+2025-10-20,居酒屋XYZ,12000,会議費・接待費
+""",
+        encoding="utf-8",
+    )
+
+    # Create attendee reference list
+    namelist_csv = reference_dir / "NameList.csv"
+    namelist_csv.write_text(
+        """ID,Name,Title,Company
+1,山田太郎,部長,ABC株式会社
+2,佐藤花子,課長,XYZ株式会社
+3,鈴木一郎,主任,DEF株式会社
+4,田中美咲,係長,GHI株式会社
+5,高橋健太,社員,JKL株式会社
+6,伊藤誠,社員,MNO株式会社
+7,渡辺和子,主任,PQR株式会社
+8,小林達也,課長,STU株式会社
+""",
+        encoding="utf-8",
+    )
+
+    # Success message
+    typer.echo("\n✅ Demo files created successfully!\n")
+    typer.echo(f"📁 Demo directory: {output_dir}\n")
+    typer.echo("Directory structure:")
+    typer.echo(f"  {output_dir}/")
+    typer.echo("  ├── Input/")
+    typer.echo("  │   └── 202510_sample.csv  (5 transactions)")
+    typer.echo("  ├── Reference/")
+    typer.echo("  │   └── NameList.csv        (8 attendees)")
+    typer.echo("  └── Output/                 (empty, for results)\n")
+
+    typer.echo("Next steps:")
+    typer.echo("  1. Process the demo files:")
+    typer.echo("     poetry run saisonxform run \\")
+    typer.echo(f"       --input {input_dir} \\")
+    typer.echo(f"       --reference {reference_dir} \\")
+    typer.echo(f"       --output {output_result_dir} \\")
+    typer.echo("       --verbose\n")
+    typer.echo("  2. View the results:")
+    typer.echo(f"     open {output_result_dir}/202510_sample.html\n")
+
+
 def main() -> int:
     """Main entry point for the CLI.
 
@@ -536,7 +621,10 @@ def main() -> int:
     try:
         app()
         return 0
-    except typer.Exit as e:
+    except (typer.Exit, SystemExit) as e:
+        # SystemExit includes both success (0) and error codes
+        if isinstance(e, SystemExit):
+            return e.code if isinstance(e.code, int) else 1
         return e.exit_code
     except Exception:
         return 1

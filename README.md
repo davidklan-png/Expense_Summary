@@ -16,6 +16,46 @@ Financial transaction processor for identifying meeting and entertainment expens
 
 ### Installation
 
+**Requirements**: Python 3.10-3.13, Poetry
+
+<details>
+<summary>Installing Poetry (if not already installed)</summary>
+
+```bash
+# macOS/Linux
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Windows (PowerShell)
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+```
+</details>
+
+#### Option 1: Direct Installation (Recommended for Users)
+
+Install directly from GitHub without cloning:
+
+```bash
+# Install from develop branch
+poetry add git+https://github.com/davidklan-png/Expense_Summary.git@develop
+
+# Or install from main/specific tag
+poetry add git+https://github.com/davidklan-png/Expense_Summary.git@main
+
+# Verify installation
+poetry run saisonxform --version
+
+# Generate demo files for testing
+poetry run saisonxform demo
+
+# This creates:
+# ./saisonxform-demo/
+# ├── Input/202510_sample.csv
+# ├── Reference/NameList.csv
+# └── Output/ (empty, will contain results)
+```
+
+#### Option 2: Clone Repository (For Development)
+
 ```bash
 # 1. Clone repository
 git clone git@github.com:davidklan-png/Expense_Summary.git saisonxform
@@ -28,45 +68,50 @@ poetry install
 poetry run saisonxform --version
 ```
 
-**Requirements**: Python 3.10-3.13, Poetry
+### Quick Test with Demo Files
 
-<details>
-<summary>Installing Poetry</summary>
+After installation, try the demo to see how it works:
 
 ```bash
-# macOS/Linux
-curl -sSL https://install.python-poetry.org | python3 -
+# 1. Generate demo files
+poetry run saisonxform demo
 
-# Windows (PowerShell)
-(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+# This creates ./saisonxform-demo/ with sample data
+
+# 2. Process the demo files
+poetry run saisonxform run \
+  --input ./saisonxform-demo/Input \
+  --reference ./saisonxform-demo/Reference \
+  --output ./saisonxform-demo/Output \
+  --verbose
+
+# 3. View the HTML report
+open ./saisonxform-demo/Output/202510_sample.html
 ```
-</details>
 
-### Setup
+### Setup for Production Use
 
 ```bash
-# 1. Create directory structure (outside the repository)
-cd ..
-mkdir -p Input Reference Output
+# 1. Create directory structure (outside any git repository)
+mkdir -p ~/saisonxform-data/{Input,Reference,Output}
 
-# Directory structure:
-# Projects/
-# ├── saisonxform/    # This repository
-# ├── Input/          # CSV files to process
-# ├── Reference/      # NameList.csv
-# └── Output/         # Generated reports
-
-# 2. Create attendee reference list
-cat > Reference/NameList.csv << 'EOF'
+# 2. Create your attendee reference list
+cat > ~/saisonxform-data/Reference/NameList.csv << 'EOF'
 ID,Name,Title,Company
 1,山田太郎,部長,ABC株式会社
 2,佐藤花子,課長,XYZ株式会社
 3,鈴木一郎,主任,DEF株式会社
 EOF
 
-# 3. Validate setup
-cd saisonxform
-poetry run saisonxform validate-config
+# 3. Copy your transaction CSV files to Input directory
+cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
+
+# 4. Run the pipeline
+poetry run saisonxform run \
+  --input ~/saisonxform-data/Input \
+  --reference ~/saisonxform-data/Reference \
+  --output ~/saisonxform-data/Output \
+  --verbose
 ```
 
 ### Usage

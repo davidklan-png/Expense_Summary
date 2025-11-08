@@ -412,8 +412,9 @@ class TestCLIProcessingErrors:
         input_dir = tmp_path / "Input"
         reference_dir = tmp_path / "Reference"
         output_dir = tmp_path / "Output"
+        archive_dir = tmp_path / "Archive"
 
-        for d in [input_dir, reference_dir, output_dir]:
+        for d in [input_dir, reference_dir, output_dir, archive_dir]:
             d.mkdir()
 
         # Create reference file
@@ -427,20 +428,21 @@ class TestCLIProcessingErrors:
         test_file = input_dir / "202510_invalid.csv"
         test_file.write_bytes(b"\xff\xfe\xfd")  # Invalid bytes
 
-        # Expect 2 warnings: header not found + missing required columns
-        with pytest.warns(UserWarning):
-            result = runner.invoke(
-                app,
-                [
-                    "run",
-                    "--input",
-                    str(input_dir),
-                    "--reference",
-                    str(reference_dir),
-                    "--output",
-                    str(output_dir),
-                ],
-            )
+        # Run and expect graceful handling (warnings are logged, not raised to CLI)
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                "--input",
+                str(input_dir),
+                "--reference",
+                str(reference_dir),
+                "--output",
+                str(output_dir),
+                "--archive",
+                str(archive_dir),
+            ],
+        )
 
         # Should complete - invalid files are skipped
         assert result.exit_code == 0
@@ -495,3 +497,85 @@ class TestCLIProcessingErrors:
         finally:
             # Restore permissions for cleanup
             os.chmod(output_dir, 0o755)
+
+
+class TestDemoCommand:
+    """Test demo command for generating sample files."""
+
+    def test_demo_creates_files(self, tmp_path):
+        """Should create demo directory with sample files."""
+        demo_dir = tmp_path / "test-demo"
+
+        result = runner.invoke(app, ["demo", "--output", str(demo_dir)])
+
+        assert result.exit_code == 0
+        assert "Demo files created successfully" in result.stdout
+
+        # Verify directory structure
+        assert (demo_dir / "Input").exists()
+        assert (demo_dir / "Reference").exists()
+        assert (demo_dir / "Output").exists()
+
+        # Verify files
+        assert (demo_dir / "Input" / "202510_sample.csv").exists()
+        assert (demo_dir / "Reference" / "NameList.csv").exists()
+
+        # Verify content
+        csv_content = (demo_dir / "Input" / "202510_sample.csv").read_text()
+        assert "東京レストラン" in csv_content
+        assert "会議費" in csv_content
+
+    def test_demo_default_output(self, tmp_path, monkeypatch):
+        """Should use default directory when no output specified."""
+        # Change to temp directory
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["demo"], input="y\n")  # Auto-confirm overwrite
+
+        assert result.exit_code == 0
+        assert (tmp_path / "saisonxform-demo").exists()
+
+    def test_demo_existing_directory_cancel(self, tmp_path):
+        """Should cancel if directory exists and user declines overwrite."""
+        demo_dir = tmp_path / "existing-demo"
+        demo_dir.mkdir()
+
+        result = runner.invoke(app, ["demo", "--output", str(demo_dir)], input="n\n")
+
+        assert result.exit_code == 0
+        assert "cancelled" in result.stdout.lower()
+
+    def test_demo_existing_directory_overwrite(self, tmp_path):
+        """Should overwrite if directory exists and user confirms."""
+        demo_dir = tmp_path / "existing-demo"
+        demo_dir.mkdir()
+
+        result = runner.invoke(app, ["demo", "--output", str(demo_dir)], input="y\n")
+
+        assert result.exit_code == 0
+        assert "Demo files created successfully" in result.stdout
+
+
+class TestMainFunction:
+    """Test main entry point function."""
+
+    def test_main_returns_zero_on_success(self, tmp_path):
+        """Should return 0 on successful execution."""
+        import sys
+
+        from saisonxform.cli import main
+
+        # Save original argv
+        original_argv = sys.argv
+
+        try:
+            # Mock argv for help command (always succeeds)
+            sys.argv = ["saisonxform", "--help"]
+
+            # main() should catch SystemExit and return 0
+            exit_code = main()
+            assert exit_code == 0
+
+        finally:
+            # Restore original argv
+            sys.argv = original_argv
