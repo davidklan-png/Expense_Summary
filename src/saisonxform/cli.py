@@ -306,16 +306,18 @@ def run(
                     id_2_weight = config.primary_id_weights.get("2", 0.9)
                     id_1_weight = config.primary_id_weights.get("1", 0.1)
 
-                    ids_dict = sample_attendee_ids(
+                    ids_result = sample_attendee_ids(
                         count=count,
                         available_ids=available_ids,
                         id_2_weight=id_2_weight,
                         id_1_weight=id_1_weight,
                         return_dict=True,
                     )
+                    # Type assertion: return_dict=True guarantees dict return
+                    assert isinstance(ids_result, dict)
                     for i in range(1, 9):
                         col_name = f"ID{i}"
-                        df.loc[idx, col_name] = ids_dict[col_name]
+                        df.loc[idx, col_name] = ids_result[col_name]
 
             # Generate output files
             output_stem = csv_file.stem

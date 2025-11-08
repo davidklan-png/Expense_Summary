@@ -1,9 +1,7 @@
 """Tests for CLI commands and error handling."""
 
 import json
-from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from saisonxform.cli import app

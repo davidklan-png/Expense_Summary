@@ -1,7 +1,6 @@
 """Tests for month_utils module."""
 
 import json
-import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -360,7 +359,8 @@ class TestArchiveFile:
 
         # Mock both move and copy to fail
         with patch("shutil.move", side_effect=OSError("Move failed")), patch(
-            "shutil.copy2", side_effect=PermissionError("Copy failed")
+            "shutil.copy2",
+            side_effect=PermissionError("Copy failed"),
         ):
             try:
                 archive_file(input_file, archive_dir, "202510")

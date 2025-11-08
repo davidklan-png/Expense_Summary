@@ -1,6 +1,6 @@
 """HTML report generation using Jinja2 templates."""
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -93,7 +93,7 @@ def generate_html_report(
     attendee_reference: pd.DataFrame,
     output_path: Path,
     source_filename: str,
-    template_dir: Path = None,
+    template_dir: Optional[Path] = None,
     handle_duplicates: bool = False,
 ) -> Path:
     """

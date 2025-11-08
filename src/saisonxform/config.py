@@ -18,7 +18,7 @@ if sys.version_info >= (3, 11):
     import tomllib
 else:
     try:
-        import tomli as tomllib
+        import tomli as tomllib  # type: ignore[import-not-found]
     except ImportError:
         raise ImportError("tomli is required for Python < 3.11. Install with: pip install tomli")
 

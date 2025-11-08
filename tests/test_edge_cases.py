@@ -64,7 +64,6 @@ class TestIOEdgeCases:
 
     def test_read_csv_returns_empty_on_no_error(self, tmp_path):
         """Should return empty DataFrame when no exception but all encodings exhausted."""
-        from unittest.mock import patch
 
         test_file = tmp_path / "test.csv"
         test_file.write_text("test,data\n1,2", encoding="utf-8")
