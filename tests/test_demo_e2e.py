@@ -202,11 +202,11 @@ class TestDemoEndToEndWorkflow:
         output_dir.mkdir()
 
         # Create minimal CSV with a unique month to avoid conflicts with other tests
-        # Using 202512 which shouldn't conflict
-        sample_csv = input_dir / "202512_test.csv"
+        # Using 202601 (far future) to avoid any archive conflicts
+        sample_csv = input_dir / "202601_test.csv"
         sample_csv.write_text(
             "利用日,ご利用店名及び商品名,利用金額,備考\n"
-            "2025-12-01,テスト,10000,会議費\n",
+            "2026-01-01,テスト,10000,会議費\n",
             encoding="utf-8-sig"
         )
 

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-11-08
+
+### Added
+- **Comprehensive BDD end-to-end tests**: Added 8 BDD-style tests covering complete demo workflow
+  - Complete demo workflow with explicit config path
+  - Auto-detected config when cd into demo directory
+  - Edge cases: missing config with CLI arguments
+  - Force reprocessing workflow
+  - Demo data quality validation (CSV, NameList, config.toml)
+  - Directory structure validation matching documentation
+  - Total tests: 144 (136 existing + 8 new), 91% coverage maintained
+
 ## [0.2.1] - 2025-11-08
 
 ### Fixed

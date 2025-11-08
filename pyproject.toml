@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "saisonxform"
-version = "0.2.1"
+version = "0.2.2"
 description = "Process financial transaction CSV files to identify meeting/entertainment expenses and assign attendees"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
