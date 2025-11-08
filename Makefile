@@ -17,7 +17,21 @@ lint:  ## Run all linters (ruff)
 lint-fix:  ## Run linters with auto-fix
 	poetry run ruff check --fix .
 
-test:  ## Run tests
+test:  ## Run tests with basic quality checks (recommended before commit)
+	@echo "=== Running tests with quality checks ==="
+	@echo ""
+	@echo "Formatting code..."
+	@$(MAKE) format
+	@echo ""
+	@echo "Running linters..."
+	@$(MAKE) lint
+	@echo ""
+	@echo "Running tests..."
+	poetry run pytest
+	@echo ""
+	@echo "✅ All checks passed! Safe to commit."
+
+test-only:  ## Run tests only (fast, no formatting/linting)
 	poetry run pytest
 
 test-cov:  ## Run tests with coverage report
@@ -44,14 +58,28 @@ qa:  ## Run all quality checks (format, lint, type-check, security, test)
 	@echo "\nRunning tests..."
 	@$(MAKE) test-cov
 
-ci:  ## Simulate CI checks locally
-	@echo "Running CI checks locally..."
+ci:  ## Simulate CI checks locally (matches GitHub Actions exactly)
+	@echo "=== Running CI checks locally (GitHub Actions simulation) ==="
+	@echo ""
+	@echo "1/5 Code Quality - Black formatting..."
 	poetry run black --check .
+	@echo ""
+	@echo "2/5 Code Quality - isort import sorting..."
 	poetry run isort --check-only .
+	@echo ""
+	@echo "3/5 Code Quality - Ruff linting..."
 	poetry run ruff check .
+	@echo ""
+	@echo "4/5 Type Checking - mypy (errors allowed)..."
 	poetry run mypy src/saisonxform || true
-	poetry run bandit -r src/saisonxform -ll || true
-	poetry run pytest --cov=saisonxform --cov-report=term-missing
+	@echo ""
+	@echo "5/5 Tests - pytest with coverage..."
+	poetry run pytest --cov=saisonxform --cov-report=xml --cov-report=term-missing
+	@echo ""
+	@echo "✅ All CI checks completed!"
+	@echo ""
+	@echo "Note: Type checking and security warnings are informational only."
+	@echo "GitHub Actions will PASS as long as Black, isort, Ruff, and tests succeed."
 
 clean:  ## Clean build artifacts and caches
 	rm -rf build/
