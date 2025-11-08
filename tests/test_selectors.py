@@ -1,6 +1,5 @@
 """Tests for attendee estimation and ID selection logic."""
 import pandas as pd
-
 from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
 
 

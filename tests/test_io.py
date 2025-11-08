@@ -2,7 +2,6 @@
 
 import pandas as pd
 import pytest
-
 from saisonxform.io import detect_encoding, find_header_row, read_csv_with_detection, write_csv_utf8_bom
 
 
