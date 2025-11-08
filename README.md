@@ -88,15 +88,20 @@ poetry run saisonxform --version
 Update to the latest version:
 
 ```bash
-# If installed with pipx
+# If installed with pipx (recommended - automatically pulls latest from develop)
 pipx upgrade saisonxform
 
-# If installed with pip
+# If installed with pip (automatically pulls latest from develop)
 pip install --user --upgrade git+https://github.com/davidklan-png/Expense_Summary.git@develop
+
+# Or install/upgrade to specific version tag
+pip install --user --upgrade git+https://github.com/davidklan-png/Expense_Summary.git@v0.2.0
 
 # If using Poetry (in project directory)
 poetry update saisonxform
 ```
+
+**Note**: Both `pipx upgrade saisonxform` and `pip install --user --upgrade git+https://...@develop` automatically fetch the latest code from the develop branch.
 
 ### Quick Test with Demo Files
 
