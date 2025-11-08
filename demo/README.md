@@ -44,7 +44,25 @@ HTML report containing:
 
 ## Running the Demo
 
-To process these demo files yourself:
+### Quick Start (Recommended)
+
+Use the demo runner script:
+
+```bash
+# From the demo directory
+cd demo
+./run-demo.sh
+```
+
+This script automatically:
+- Creates a temporary directory outside git repository
+- Copies demo files to the temporary location
+- Runs saisonxform with proper configuration
+- Shows output files and offers to open them
+
+### Manual Method
+
+If you prefer to run manually:
 
 ```bash
 # Copy demo files outside the repository
@@ -58,13 +76,13 @@ poetry run saisonxform run \
   --reference /tmp/saisonxform-demo/Reference \
   --output /tmp/saisonxform-demo/Output \
   --month 202510 \
-  --force
+  --verbose
 
 # View the results
 open /tmp/saisonxform-demo/Output/202510_sample.html
 ```
 
-**Note:** Data directories must be outside git repositories for security.
+**Note:** Data directories must be outside git repositories for security. This prevents accidental commits of sensitive financial data.
 
 ## Expected Behavior
 
