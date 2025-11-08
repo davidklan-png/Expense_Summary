@@ -180,13 +180,14 @@ class Config:
         """Validate that required template files exist.
 
         Args:
-            templates_dir: Templates directory (defaults to project_root/templates)
+            templates_dir: Templates directory (defaults to package templates/)
 
         Raises:
             FileNotFoundError: If templates directory or required templates don't exist
         """
         if templates_dir is None:
-            templates_dir = self.project_root / "templates"
+            # Templates are now inside the package
+            templates_dir = Path(__file__).parent / "templates"
 
         if not templates_dir.exists():
             raise FileNotFoundError(f"Templates directory not found: {templates_dir}")

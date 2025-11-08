@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-11-08
+
+### Fixed
+- **Template packaging for global installations**: Moved templates into package directory
+  - Previously: templates/ at project root (not included in pip/pipx installations)
+  - Now: src/saisonxform/templates/ (automatically included in package)
+  - Fixes issue where pipx/pip installations couldn't find report.html.j2
+  - Updated reporting.py and config.py to use package-relative template paths
+
 ## [0.2.2] - 2025-11-08
 
 ### Added

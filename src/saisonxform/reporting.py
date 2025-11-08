@@ -124,10 +124,9 @@ def generate_html_report(
 
     # Determine template directory
     if template_dir is None:
-        # Default to project's templates directory
+        # Default to package's templates directory
         current_file = Path(__file__)
-        project_root = current_file.parent.parent.parent
-        template_dir = project_root / "templates"
+        template_dir = current_file.parent / "templates"
 
     # Set up Jinja2 environment
     env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=select_autoescape(["html", "xml"]))
