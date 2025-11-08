@@ -2,6 +2,7 @@
 
 import pandas as pd
 import pytest
+
 from saisonxform.io import detect_encoding, find_header_row, read_csv_with_detection
 from saisonxform.reporting import get_unique_attendees
 from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions

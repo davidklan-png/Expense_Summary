@@ -3,8 +3,9 @@
 import json
 
 import pytest
-from saisonxform.cli import app
 from typer.testing import CliRunner
+
+from saisonxform.cli import app
 
 runner = CliRunner()
 

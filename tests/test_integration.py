@@ -2,9 +2,10 @@
 
 import pandas as pd
 import pytest
+from typer.testing import CliRunner
+
 from saisonxform.cli import app
 from saisonxform.config import Config
-from typer.testing import CliRunner
 
 runner = CliRunner()
 
