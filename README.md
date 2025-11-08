@@ -30,30 +30,44 @@ curl -sSL https://install.python-poetry.org | python3 -
 ```
 </details>
 
-#### Option 1: Direct Installation (Recommended for Users)
+#### Option 1: Global Installation (Recommended)
 
-Install directly from GitHub without cloning:
+Install as a global command available system-wide:
 
 ```bash
-# Install from develop branch
-poetry add git+https://github.com/davidklan-png/Expense_Summary.git@develop
+# Install using pipx (recommended for CLI tools)
+pipx install git+https://github.com/davidklan-png/Expense_Summary.git@develop
 
-# Or install from main/specific tag
-poetry add git+https://github.com/davidklan-png/Expense_Summary.git@main
+# Or install with pip (adds to user environment)
+pip install --user git+https://github.com/davidklan-png/Expense_Summary.git@develop
 
 # Verify installation
-poetry run saisonxform --version
+sf --version  # or: saisonxform --version
 
-# Generate demo files for testing
-poetry run saisonxform demo
-# Note: You can also use the short alias 'sf' instead of 'saisonxform'
-
-# This creates:
-# ./saisonxform-demo/
-# ├── Input/202510_sample.csv
-# ├── Reference/NameList.csv
-# └── Output/ (empty, will contain results)
+# Now you can use it directly without 'poetry run'
+sf demo
+sf run --help
 ```
+
+<details>
+<summary>Installing pipx (if not already installed)</summary>
+
+```bash
+# macOS
+brew install pipx
+pipx ensurepath
+
+# Ubuntu/Debian
+sudo apt install pipx
+pipx ensurepath
+
+# Windows
+py -m pip install --user pipx
+py -m pipx ensurepath
+```
+
+**Why pipx?** Installs CLI tools in isolated environments while making them globally available.
+</details>
 
 #### Option 2: Clone Repository (For Development)
 
@@ -69,6 +83,21 @@ poetry install
 poetry run saisonxform --version
 ```
 
+### Upgrading
+
+Update to the latest version:
+
+```bash
+# If installed with pipx
+pipx upgrade saisonxform
+
+# If installed with pip
+pip install --user --upgrade git+https://github.com/davidklan-png/Expense_Summary.git@develop
+
+# If using Poetry (in project directory)
+poetry update saisonxform
+```
+
 ### Quick Test with Demo Files
 
 After installation, try the demo to see how it works.
@@ -76,19 +105,21 @@ After installation, try the demo to see how it works.
 **Note**: Examples below use `sf` (short alias) for brevity. You can also use `saisonxform` - they're equivalent.
 
 ```bash
-# 1. Generate demo files
+# If installed globally (pipx/pip)
+sf demo  # Generate demo files
+sf run --input ./saisonxform-demo/Input \
+       --reference ./saisonxform-demo/Reference \
+       --output ./saisonxform-demo/Output \
+       --verbose
+
+# If using Poetry in development
 poetry run sf demo
+poetry run sf run --input ./saisonxform-demo/Input \
+                  --reference ./saisonxform-demo/Reference \
+                  --output ./saisonxform-demo/Output \
+                  --verbose
 
-# This creates ./saisonxform-demo/ with sample data
-
-# 2. Process the demo files
-poetry run sf run \
-  --input ./saisonxform-demo/Input \
-  --reference ./saisonxform-demo/Reference \
-  --output ./saisonxform-demo/Output \
-  --verbose
-
-# 3. View the HTML report
+# View the HTML report
 open ./saisonxform-demo/Output/202510_sample.html
 ```
 
@@ -109,8 +140,8 @@ EOF
 # 3. Copy your transaction CSV files to Input directory
 cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
 
-# 4. Run the pipeline ('sf' is short alias for 'saisonxform')
-poetry run sf run \
+# 4. Run the pipeline
+sf run \
   --input ~/saisonxform-data/Input \
   --reference ~/saisonxform-data/Reference \
   --output ~/saisonxform-data/Output \
@@ -121,21 +152,23 @@ poetry run sf run \
 
 ```bash
 # Process latest 2 months (default)
-poetry run sf run
+sf run
 
 # Process specific month(s)
-poetry run sf run --month 202510
-poetry run sf run --month 202510 --month 202511
+sf run --month 202510
+sf run --month 202510 --month 202511
 
 # Force reprocess archived months
-poetry run sf run --month 202510 --force
+sf run --month 202510 --force
 
 # Verbose output
-poetry run sf run --verbose
+sf run --verbose
 
 # Override directories
-poetry run sf run --input /custom/input --output /custom/output
+sf run --input /custom/input --output /custom/output
 ```
+
+**Note**: If using Poetry development setup, prefix commands with `poetry run` (e.g., `poetry run sf run`)
 
 **Expected Output:**
 ```
@@ -388,18 +421,24 @@ saisonxform/
 ## Troubleshooting
 
 <details>
-<summary>"No module named 'saisonxform'"</summary>
+<summary>"Command not found: sf" or "No module named 'saisonxform'"</summary>
 
-Use `poetry run`:
+**Solution 1**: Install globally with pipx (recommended)
 ```bash
-poetry run sf run  # ✅ Correct
-sf run             # ❌ Wrong (unless in poetry shell)
+pipx install git+https://github.com/davidklan-png/Expense_Summary.git@develop
+sf --version  # Should work now
 ```
 
-Or activate environment:
+**Solution 2**: If using Poetry development setup, use `poetry run`
+```bash
+poetry run sf run  # ✅ Correct
+sf run             # ❌ Wrong (not in PATH)
+```
+
+**Solution 3**: Activate Poetry environment
 ```bash
 poetry shell
-sf run  # Now works
+sf run  # Now works within this shell
 ```
 </details>
 
