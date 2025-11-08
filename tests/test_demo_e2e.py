@@ -5,9 +5,7 @@ simulating real-world usage scenarios including global installations with pipx/p
 """
 
 import csv
-from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from saisonxform.cli import app
@@ -92,9 +90,10 @@ class TestDemoEndToEndWorkflow:
         result = runner.invoke(
             app,
             [
-                "--config", str(config_file),
+                "--config",
+                str(config_file),
                 "--verbose",
-            ]
+            ],
         )
 
         # THEN: Processing should succeed
@@ -204,30 +203,28 @@ class TestDemoEndToEndWorkflow:
         # Create minimal CSV with a unique month to avoid conflicts with other tests
         # Using 202601 (far future) to avoid any archive conflicts
         sample_csv = input_dir / "202601_test.csv"
-        sample_csv.write_text(
-            "利用日,ご利用店名及び商品名,利用金額,備考\n"
-            "2026-01-01,テスト,10000,会議費\n",
-            encoding="utf-8-sig"
-        )
+        sample_csv.write_text("利用日,ご利用店名及び商品名,利用金額,備考\n" "2026-01-01,テスト,10000,会議費\n", encoding="utf-8-sig")
 
         # Create minimal NameList with at least IDs 1 and 2 (for weighted selection)
         namelist = reference_dir / "NameList.csv"
         namelist.write_text(
-            "ID,Name,Title,Company\n"
-            "1,テスト太郎,部長,テスト株式会社\n"
-            "2,テスト花子,課長,テスト株式会社\n"
-            "3,テスト一郎,主任,テスト株式会社\n",
-            encoding="utf-8"
+            "ID,Name,Title,Company\n" "1,テスト太郎,部長,テスト株式会社\n" "2,テスト花子,課長,テスト株式会社\n" "3,テスト一郎,主任,テスト株式会社\n",
+            encoding="utf-8",
         )
 
         # WHEN: Process with explicit paths (no config.toml)
+        # Use --force to avoid conflicts with any previous runs in CI
         result = runner.invoke(
             app,
             [
-                "--input", str(input_dir),
-                "--reference", str(reference_dir),
-                "--output", str(output_dir),
-            ]
+                "--input",
+                str(input_dir),
+                "--reference",
+                str(reference_dir),
+                "--output",
+                str(output_dir),
+                "--force",  # Avoid archive conflicts in CI
+            ],
         )
 
         # THEN: Should succeed even without config.toml
@@ -258,23 +255,18 @@ class TestDemoEndToEndWorkflow:
 
         # Copy back (simulating user wants to reprocess)
         import shutil
+
         shutil.copy(archived, input_file)
 
         # WHEN: Try to process same month without --force
-        result = runner.invoke(
-            app,
-            ["--config", str(config_file), "--month", "202510"]
-        )
+        result = runner.invoke(app, ["--config", str(config_file), "--month", "202510"])
 
         # THEN: Should error (already archived)
         assert result.exit_code == 1
         assert "already been archived" in result.stdout.lower()
 
         # WHEN: Process with --force flag
-        result = runner.invoke(
-            app,
-            ["--config", str(config_file), "--month", "202510", "--force"]
-        )
+        result = runner.invoke(app, ["--config", str(config_file), "--month", "202510", "--force"])
 
         # THEN: Should succeed
         assert result.exit_code == 0
