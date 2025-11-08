@@ -105,23 +105,31 @@ After installation, try the demo to see how it works.
 **Note**: Examples below use `sf` (short alias) for brevity. You can also use `saisonxform` - they're equivalent.
 
 ```bash
-# If installed globally (pipx/pip)
-sf demo  # Generate demo files
+# Generate demo files (includes config.toml)
+sf demo
+
+# The demo creates:
+# ./saisonxform-demo/
+# ├── Input/202510_sample.csv     (5 sample transactions)
+# ├── Reference/NameList.csv      (8 attendees)
+# ├── Output/                     (results will be here)
+# └── config.toml                 (auto-configured paths)
+
+# Process the demo (cd into demo directory first)
+cd saisonxform-demo
+sf --verbose  # config.toml is auto-detected!
+
+# Or run from outside with explicit paths
 sf --input ./saisonxform-demo/Input \
    --reference ./saisonxform-demo/Reference \
    --output ./saisonxform-demo/Output \
    --verbose
 
-# If using Poetry in development
-poetry run sf demo
-poetry run sf --input ./saisonxform-demo/Input \
-              --reference ./saisonxform-demo/Reference \
-              --output ./saisonxform-demo/Output \
-              --verbose
-
 # View the HTML report
 open ./saisonxform-demo/Output/202510_sample.html
 ```
+
+**💡 Tip**: The demo includes a `config.toml` file that auto-configures all paths. Just `cd` into the demo directory and run `sf`!
 
 ### Setup for Production Use
 

@@ -5,32 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2025-11-08
 
-### Added - 2025-11-07
-- Poetry-based Python project structure with pyproject.toml
-- Three-tier configuration system (env vars > config.toml > pyproject.toml)
-- CLI skeleton with `validate-config` command
-- Configuration loader with path resolution and validation
-- Jinja2 HTML report template with Japanese support
-- Comprehensive project documentation in README.md
-- Session documentation system in docs/
-- Test structure with data fixtures directory
-- OpenSpec compliance for plan-poetry-environment
+### Added
+- **Demo command improvements**: `sf demo` now generates `config.toml` automatically
+  - config.toml includes all path configurations
+  - Users can simply `cd` into demo directory and run `sf`
+  - Better user experience for first-time users
+- **CLI simplification**: Removed need for `run` subcommand
+  - `sf` now processes files directly (was `sf run`)
+  - `run` subcommand still works for backward compatibility
+  - Cleaner, more intuitive command structure
+- **Global installation support**: Added pipx/pip installation instructions
+  - Works as system-wide command without `poetry run`
+  - Available on Linux, macOS, Windows WSL
+- **Enhanced Makefile**: Added `make ci` for local CI simulation
+  - Matches GitHub Actions exactly
+  - Prevents push failures by catching issues locally
+  - Clear feedback on what will pass/fail in CI
 
-### Project Setup
-- Python 3.10+ support with Poetry dependency management
-- Dependencies: pandas, numpy, chardet, jinja2 for data processing
-- Dev dependencies: pytest, pytest-cov, black, ruff, isort
-- External virtualenv configuration (Poetry default)
-- 90% test coverage target configured
+### Changed
+- Demo output instructions now show simplified `sf` command
+- All documentation updated to use `sf` instead of `sf run`
+- README reorganized with better installation options
 
-### Documentation
-- Quick Start guide for 2-minute onboarding
-- Project Status dashboard
-- Decision Log with architectural choices
-- Session Index for development history
+### Fixed
+- Demo command now creates fully functional standalone demo environment
+- Config paths are relative to demo directory for portability
 
-## [0.1.0] - TBD
+## [0.1.0] - 2025-11-07
 
-Initial release (planned after Phase 2 completion)
+### Added
+- Initial release with core functionality
+- Transaction CSV processing with auto-encoding detection
+- Attendee estimation and weighted ID assignment
+- HTML report generation
+- Per-file archival workflow with retry markers
+- 91% test coverage with 136 passing tests
+- Comprehensive CI/CD with GitHub Actions
+
+[0.2.0]: https://github.com/davidklan-png/Expense_Summary/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/davidklan-png/Expense_Summary/releases/tag/v0.1.0

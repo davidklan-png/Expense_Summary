@@ -519,11 +519,18 @@ class TestDemoCommand:
         # Verify files
         assert (demo_dir / "Input" / "202510_sample.csv").exists()
         assert (demo_dir / "Reference" / "NameList.csv").exists()
+        assert (demo_dir / "config.toml").exists()
 
         # Verify content
         csv_content = (demo_dir / "Input" / "202510_sample.csv").read_text()
         assert "東京レストラン" in csv_content
         assert "会議費" in csv_content
+
+        # Verify config.toml content
+        config_content = (demo_dir / "config.toml").read_text()
+        assert 'input_dir = "Input"' in config_content
+        assert 'reference_dir = "Reference"' in config_content
+        assert 'output_dir = "Output"' in config_content
 
     def test_demo_default_output(self, tmp_path, monkeypatch):
         """Should use default directory when no output specified."""
