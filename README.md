@@ -46,7 +46,7 @@ sf --version  # or: saisonxform --version
 
 # Now you can use it directly without 'poetry run'
 sf demo
-sf run --help
+sf --help
 ```
 
 <details>
@@ -107,17 +107,17 @@ After installation, try the demo to see how it works.
 ```bash
 # If installed globally (pipx/pip)
 sf demo  # Generate demo files
-sf run --input ./saisonxform-demo/Input \
-       --reference ./saisonxform-demo/Reference \
-       --output ./saisonxform-demo/Output \
-       --verbose
+sf --input ./saisonxform-demo/Input \
+   --reference ./saisonxform-demo/Reference \
+   --output ./saisonxform-demo/Output \
+   --verbose
 
 # If using Poetry in development
 poetry run sf demo
-poetry run sf run --input ./saisonxform-demo/Input \
-                  --reference ./saisonxform-demo/Reference \
-                  --output ./saisonxform-demo/Output \
-                  --verbose
+poetry run sf --input ./saisonxform-demo/Input \
+              --reference ./saisonxform-demo/Reference \
+              --output ./saisonxform-demo/Output \
+              --verbose
 
 # View the HTML report
 open ./saisonxform-demo/Output/202510_sample.html
@@ -141,34 +141,33 @@ EOF
 cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
 
 # 4. Run the pipeline
-sf run \
-  --input ~/saisonxform-data/Input \
-  --reference ~/saisonxform-data/Reference \
-  --output ~/saisonxform-data/Output \
-  --verbose
+sf --input ~/saisonxform-data/Input \
+   --reference ~/saisonxform-data/Reference \
+   --output ~/saisonxform-data/Output \
+   --verbose
 ```
 
 ### Usage
 
 ```bash
 # Process latest 2 months (default)
-sf run
+sf
 
 # Process specific month(s)
-sf run --month 202510
-sf run --month 202510 --month 202511
+sf --month 202510
+sf --month 202510 --month 202511
 
 # Force reprocess archived months
-sf run --month 202510 --force
+sf --month 202510 --force
 
 # Verbose output
-sf run --verbose
+sf --verbose
 
 # Override directories
-sf run --input /custom/input --output /custom/output
+sf --input /custom/input --output /custom/output
 ```
 
-**Note**: If using Poetry development setup, prefix commands with `poetry run` (e.g., `poetry run sf run`)
+**Note**: If using Poetry development setup, prefix commands with `poetry run` (e.g., `poetry run sf`)
 
 **Expected Output:**
 ```
@@ -431,14 +430,14 @@ sf --version  # Should work now
 
 **Solution 2**: If using Poetry development setup, use `poetry run`
 ```bash
-poetry run sf run  # ✅ Correct
-sf run             # ❌ Wrong (not in PATH)
+poetry run sf  # ✅ Correct
+sf             # ❌ Wrong (not in PATH)
 ```
 
 **Solution 3**: Activate Poetry environment
 ```bash
 poetry shell
-sf run  # Now works within this shell
+sf  # Now works within this shell
 ```
 </details>
 

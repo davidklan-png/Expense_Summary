@@ -30,7 +30,7 @@ cp -r "$DEMO_DIR"/Reference/* "$TEMP_DIR/Reference/" 2>/dev/null || true
 # Run saisonxform ('sf' is short alias)
 echo -e "\n${GREEN}Running saisonxform...${NC}\n"
 cd "$PROJECT_ROOT"
-poetry run sf run \
+poetry run sf \
   --input "$TEMP_DIR/Input" \
   --reference "$TEMP_DIR/Reference" \
   --output "$TEMP_DIR/Output" \

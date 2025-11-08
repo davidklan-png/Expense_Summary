@@ -494,7 +494,7 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -504,17 +504,79 @@ def main_callback(
         is_eager=True,
         help="Show version and exit",
     ),
+    month: list[str] = typer.Option(
+        [],
+        "--month",
+        "-m",
+        help="Process specific month(s) in YYYYMM format (repeatable). Default: latest 2 months.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force reprocessing of already-archived months",
+    ),
+    input_dir: Optional[Path] = typer.Option(
+        None,
+        "--input",
+        help="Override input directory path",
+    ),
+    reference_dir: Optional[Path] = typer.Option(
+        None,
+        "--reference",
+        help="Override reference directory path",
+    ),
+    output_dir: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        help="Override output directory path",
+    ),
+    archive_dir: Optional[Path] = typer.Option(
+        None,
+        "--archive",
+        help="Override archive directory path",
+    ),
+    config_file: Optional[Path] = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to config.toml file",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose logging (with sensitive data redaction)",
+    ),
 ) -> None:
     """Saison Transform - Financial Transaction Processor.
 
-    Main commands:
-      run              Process transactions (most common)
+    Process transaction CSV files by default. Use subcommands for other actions:
       demo             Generate sample files for testing
       validate-config  Check configuration
 
-    Quick tip: Use 'sf run' as a shorter alias for 'saisonxform run'
+    Examples:
+      sf                        Process latest 2 months
+      sf --month 202510         Process specific month
+      sf --verbose              Process with detailed logging
+      sf demo                   Generate demo files
     """
-    pass
+    # If a subcommand is invoked, don't run the default processing
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # Otherwise, run the default processing (same as 'run' command)
+    ctx.invoke(
+        run,
+        month=month,
+        force=force,
+        input_dir=input_dir,
+        reference_dir=reference_dir,
+        output_dir=output_dir,
+        archive_dir=archive_dir,
+        config_file=config_file,
+        verbose=verbose,
+    )
 
 
 @app.command()

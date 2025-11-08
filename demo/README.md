@@ -71,7 +71,7 @@ cp demo/Input/* /tmp/saisonxform-demo/Input/
 cp demo/Reference/* /tmp/saisonxform-demo/Reference/
 
 # Run the pipeline ('sf' is short alias for 'saisonxform')
-poetry run sf run \
+poetry run sf \
   --input /tmp/saisonxform-demo/Input \
   --reference /tmp/saisonxform-demo/Reference \
   --output /tmp/saisonxform-demo/Output \
