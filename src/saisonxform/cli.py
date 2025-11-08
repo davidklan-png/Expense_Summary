@@ -6,7 +6,6 @@ Uses Typer for robust CLI architecture with subcommands.
 
 import subprocess
 import sys
-import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -495,7 +494,7 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main_callback(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -506,25 +505,16 @@ def main_callback(
         help="Show version and exit",
     ),
 ) -> None:
-    """Saison Transform - Financial Transaction Processor."""
-    # Only process if no subcommand will be invoked
-    if ctx.invoked_subcommand is not None:
-        return
+    """Saison Transform - Financial Transaction Processor.
 
-    # Check for deprecated usage patterns
-    if len(sys.argv) > 1 and not any(arg in sys.argv for arg in ["--help", "-h", "--version"]):
-        deprecated_cmd = sys.argv[1]
-        if deprecated_cmd == "process":
-            warnings.warn(
-                "The 'process' command is deprecated. Use 'run' instead.\n"
-                "Example: saisonxform run\n"
-                "Running 'run' command for backward compatibility...",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            # Redirect to run command
-            ctx.invoke(run)
-            return
+    Main commands:
+      run              Process transactions (most common)
+      demo             Generate sample files for testing
+      validate-config  Check configuration
+
+    Quick tip: Use 'sf run' as a shorter alias for 'saisonxform run'
+    """
+    pass
 
 
 @app.command()

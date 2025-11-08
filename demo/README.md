@@ -70,8 +70,8 @@ mkdir -p /tmp/saisonxform-demo/{Input,Reference,Output}
 cp demo/Input/* /tmp/saisonxform-demo/Input/
 cp demo/Reference/* /tmp/saisonxform-demo/Reference/
 
-# Run the pipeline
-poetry run saisonxform run \
+# Run the pipeline ('sf' is short alias for 'saisonxform')
+poetry run sf run \
   --input /tmp/saisonxform-demo/Input \
   --reference /tmp/saisonxform-demo/Reference \
   --output /tmp/saisonxform-demo/Output \

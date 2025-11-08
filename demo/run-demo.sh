@@ -27,10 +27,10 @@ echo -e "${YELLOW}Copying demo files...${NC}"
 cp -r "$DEMO_DIR"/Input/* "$TEMP_DIR/Input/" 2>/dev/null || true
 cp -r "$DEMO_DIR"/Reference/* "$TEMP_DIR/Reference/" 2>/dev/null || true
 
-# Run saisonxform
+# Run saisonxform ('sf' is short alias)
 echo -e "\n${GREEN}Running saisonxform...${NC}\n"
 cd "$PROJECT_ROOT"
-poetry run saisonxform run \
+poetry run sf run \
   --input "$TEMP_DIR/Input" \
   --reference "$TEMP_DIR/Reference" \
   --output "$TEMP_DIR/Output" \

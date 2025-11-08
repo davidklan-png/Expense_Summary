@@ -46,6 +46,7 @@ poetry run saisonxform --version
 
 # Generate demo files for testing
 poetry run saisonxform demo
+# Note: You can also use the short alias 'sf' instead of 'saisonxform'
 
 # This creates:
 # ./saisonxform-demo/
@@ -70,16 +71,18 @@ poetry run saisonxform --version
 
 ### Quick Test with Demo Files
 
-After installation, try the demo to see how it works:
+After installation, try the demo to see how it works.
+
+**Note**: Examples below use `sf` (short alias) for brevity. You can also use `saisonxform` - they're equivalent.
 
 ```bash
 # 1. Generate demo files
-poetry run saisonxform demo
+poetry run sf demo
 
 # This creates ./saisonxform-demo/ with sample data
 
 # 2. Process the demo files
-poetry run saisonxform run \
+poetry run sf run \
   --input ./saisonxform-demo/Input \
   --reference ./saisonxform-demo/Reference \
   --output ./saisonxform-demo/Output \
@@ -106,8 +109,8 @@ EOF
 # 3. Copy your transaction CSV files to Input directory
 cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
 
-# 4. Run the pipeline
-poetry run saisonxform run \
+# 4. Run the pipeline ('sf' is short alias for 'saisonxform')
+poetry run sf run \
   --input ~/saisonxform-data/Input \
   --reference ~/saisonxform-data/Reference \
   --output ~/saisonxform-data/Output \
@@ -118,23 +121,20 @@ poetry run saisonxform run \
 
 ```bash
 # Process latest 2 months (default)
-poetry run saisonxform run
-
-# Short alias
 poetry run sf run
 
 # Process specific month(s)
-poetry run saisonxform run --month 202510
-poetry run saisonxform run --month 202510 --month 202511
+poetry run sf run --month 202510
+poetry run sf run --month 202510 --month 202511
 
 # Force reprocess archived months
-poetry run saisonxform run --month 202510 --force
+poetry run sf run --month 202510 --force
 
 # Verbose output
-poetry run saisonxform run --verbose
+poetry run sf run --verbose
 
 # Override directories
-poetry run saisonxform run --input /custom/input --output /custom/output
+poetry run sf run --input /custom/input --output /custom/output
 ```
 
 **Expected Output:**
@@ -272,7 +272,7 @@ export REFERENCE_DIR=/custom/reference
 export OUTPUT_DIR=/custom/output
 export ARCHIVE_DIR=/custom/archive
 
-poetry run saisonxform run
+poetry run sf run
 ```
 
 ## Archival Workflow
@@ -392,14 +392,14 @@ saisonxform/
 
 Use `poetry run`:
 ```bash
-poetry run saisonxform run  # ✅ Correct
-saisonxform run             # ❌ Wrong
+poetry run sf run  # ✅ Correct
+sf run             # ❌ Wrong (unless in poetry shell)
 ```
 
 Or activate environment:
 ```bash
 poetry shell
-saisonxform run  # Now works
+sf run  # Now works
 ```
 </details>
 
@@ -411,7 +411,7 @@ Create directories outside repository:
 cd ..
 mkdir -p Input Reference Output
 cd saisonxform
-poetry run saisonxform validate-config
+poetry run sf validate-config
 ```
 </details>
 
