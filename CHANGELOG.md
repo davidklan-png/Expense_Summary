@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-11-08
+
+### Fixed
+- **Config path resolution for global installations**: Fixed config.toml relative paths when using pipx/pip installations
+  - Previously: Relative paths resolved based on package installation directory (e.g., `pipx/venvs/saisonxform/Lib/Reference`)
+  - Now: Relative paths correctly resolve based on config.toml file location
+  - Enables portable demo directories and proper path resolution with `--config` option
+  - Improves user experience for global installations
+
 ## [0.2.0] - 2025-11-08
 
 ### Added

@@ -30,12 +30,17 @@ class Config:
         """Initialize configuration.
 
         Args:
-            project_root: Project root directory (defaults to parent of this file's grandparent)
+            project_root: Project root directory (defaults to current working directory)
             config_file: Optional path to config.toml file (overrides default location)
         """
         if project_root is None:
-            # Determine project root: src/saisonxform/config.py -> go up 2 levels
-            project_root = Path(__file__).parent.parent.parent
+            if config_file is not None:
+                # Use config file's parent directory as project root
+                # Resolve the config file path first, then get its parent
+                project_root = Path(config_file).resolve().parent
+            else:
+                # Use current working directory as project root
+                project_root = Path.cwd()
 
         self.project_root = project_root
         self.config_file = config_file

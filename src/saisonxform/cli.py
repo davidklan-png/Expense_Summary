@@ -490,7 +490,7 @@ def validate_config(
 def version_callback(value: bool) -> None:
     """Handle --version flag."""
     if value:
-        typer.echo("saisonxform version 0.2.0")
+        typer.echo("saisonxform version 0.2.1")
         raise typer.Exit()
 
 
