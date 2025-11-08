@@ -53,10 +53,12 @@ class TestEncodingDetection:
         test_file.write_text("test", encoding="utf-8")
 
         # Mock chardet.detect to raise an exception
+        # Expect warning about chardet failure
         with patch("chardet.detect", side_effect=Exception("Unexpected error")):
-            encoding = detect_encoding(test_file)
-            # Should fallback to utf-8-sig
-            assert encoding == "utf-8-sig"
+            with pytest.warns(UserWarning, match="chardet failed"):
+                encoding = detect_encoding(test_file)
+                # Should fallback to utf-8-sig
+                assert encoding == "utf-8-sig"
 
 
 class TestHeaderDetection:
@@ -142,13 +144,15 @@ class TestCSVReading:
         test_file.write_text("test,data\n1,2", encoding="utf-8")
 
         # Mock pd.read_csv to always fail
+        # Expect warning about header not found
         with patch("pandas.read_csv", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "fail")):
-            try:
-                read_csv_with_detection(test_file)
-                raise AssertionError("Should have raised ValueError")
-            except ValueError as e:
-                assert "Failed to read" in str(e)
-                assert "with any encoding" in str(e)
+            with pytest.warns(UserWarning, match="Header row not found"):
+                try:
+                    read_csv_with_detection(test_file)
+                    raise AssertionError("Should have raised ValueError")
+                except ValueError as e:
+                    assert "Failed to read" in str(e)
+                    assert "with any encoding" in str(e)
 
 
 class TestCSVWriting:

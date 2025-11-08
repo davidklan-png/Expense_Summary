@@ -17,13 +17,15 @@ class TestIOEdgeCases:
 
         # detect_encoding doesn't raise FileNotFoundError, it returns fallback
         # So we test that it returns a valid encoding even for non-existent files
-        try:
-            encoding = detect_encoding(fake_file)
-            # Should return fallback encoding
-            assert encoding in ["utf-8-sig", "utf-8", "cp932"]
-        except FileNotFoundError:
-            # Also acceptable behavior
-            pass
+        # Expect warning about chardet failure
+        with pytest.warns(UserWarning, match="chardet failed"):
+            try:
+                encoding = detect_encoding(fake_file)
+                # Should return fallback encoding
+                assert encoding in ["utf-8-sig", "utf-8", "cp932"]
+            except FileNotFoundError:
+                # Also acceptable behavior
+                pass
 
     def test_find_header_beyond_row_10(self, tmp_path):
         """Should return None if header is beyond row 10."""

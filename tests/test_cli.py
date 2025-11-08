@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from saisonxform.cli import app
@@ -158,22 +159,24 @@ class TestCLIRetryMarkerHandling:
             encoding="utf-8",
         )
 
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                "--input",
-                str(input_dir),
-                "--reference",
-                str(reference_dir),
-                "--output",
-                str(output_dir),
-                "--archive",
-                str(archive_dir),
-                "--month",
-                "202510",
-            ],
-        )
+        # Expect warning about missing '備考' column (file has escaped newline)
+        with pytest.warns(UserWarning, match="Missing required columns"):
+            result = runner.invoke(
+                app,
+                [
+                    "run",
+                    "--input",
+                    str(input_dir),
+                    "--reference",
+                    str(reference_dir),
+                    "--output",
+                    str(output_dir),
+                    "--archive",
+                    str(archive_dir),
+                    "--month",
+                    "202510",
+                ],
+            )
 
         # Should either process or mention retry marker
         # (behavior depends on implementation details)
@@ -424,18 +427,20 @@ class TestCLIProcessingErrors:
         test_file = input_dir / "202510_invalid.csv"
         test_file.write_bytes(b"\xff\xfe\xfd")  # Invalid bytes
 
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                "--input",
-                str(input_dir),
-                "--reference",
-                str(reference_dir),
-                "--output",
-                str(output_dir),
-            ],
-        )
+        # Expect 2 warnings: header not found + missing required columns
+        with pytest.warns(UserWarning):
+            result = runner.invoke(
+                app,
+                [
+                    "run",
+                    "--input",
+                    str(input_dir),
+                    "--reference",
+                    str(reference_dir),
+                    "--output",
+                    str(output_dir),
+                ],
+            )
 
         # Should complete - invalid files are skipped
         assert result.exit_code == 0
