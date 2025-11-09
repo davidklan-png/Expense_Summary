@@ -1,0 +1,102 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv
+venv/
+ENV/
+env/
+.virtualenv
+
+# Poetry
+poetry.lock
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff cache
+.ruff_cache/
+
+# Pyre type checker
+.pyre/
+
+# Output directories (external to repo)
+# Note: Input/, Reference/, Output/, Archive/ are sibling directories
+# They should not be in this repo, but adding for safety
+Input/
+Reference/
+Output/
+Archive/
+
+# Exception: Allow demo/ subdirectory for example files
+!demo/
+!demo/Input/
+!demo/Reference/
+!demo/Output/
+
+# OpenSpec archives (keep only active changes)
+openspec/changes/archive/
+
+# Serena MCP workspace data
+.serena/
+
+# Temporary files
+*.tmp
+*.bak
+*.log

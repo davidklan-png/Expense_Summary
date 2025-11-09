@@ -1,0 +1,57 @@
+Specs for Saison Transform
+Variables
+input_folder_path: Path to the folder containing input CSV files.
+output_folder_path: Path to the folder where processed files and reports will be saved.
+attendee_mapping: Dictionary mapping attendee IDs (備考) to their details (Name, Title, Company) 
+attendees_df: Pandas DataFrame containing the full attendee list from the CSV.
+random_attendee_id: List of string IDs for random selection.
+
+Requirements and Specification Document
+1. Introduction
+This document outlines the requirements and specifications for the Python script designed to process financial transaction data from CSV files, identify relevant transactions (會議費, 接待費), estimate attendees, and generate a report. 
+
+2. Purpose
+The purpose of this program is to automate the process of analyzing financial transaction records, specifically focusing on identifying and attributing attendees to expenses categorized as "會議費" (meeting expenses) or "接待費" (entertainment expenses). This automation aims to streamline reporting and compliance related to these expenditures.
+
+3. Inputs
+Input Folder: A specified folder in Google Drive containing CSV files with financial transaction data. Each CSV file represents a statement and is expected to have a header row (location may vary per file) containing at least the following columns:
+利用日 (Transaction Date)
+ご利用店名及び商品名 (Store Name and Product Name)
+利用金額 (Transaction Amount)
+備考 (Remarks)
+Attendee List: A CSV file named NameList.csv located in the main data folder path. This file contains a list of potential attendees with the following required columns:
+ID (Unique Attendee Identifier)
+Name
+Title
+Company
+
+4. Outputs
+Processed CSV Files: For each input CSV file, a new CSV file will be generated in the specified output folder. This processed CSV will include the original data plus new columns for the estimated number of attendees (出席者) and specific attendee IDs (ID1 through ID8) populated for relevant transactions. HTML Reports: For each processed CSV file, an HTML report will be generated in the output folder. This report will include:
+A table displaying the processed data with populated attendee information.
+A list of all unique selected attendees from the processed data, along with their details (ID, Name, Title, Company) from the Attendee List.
+5. Functional Requirements
+The script shall read financial transaction data from multiple CSV files in a specified input folder.
+The script shall statically identify the header row in each input CSV file.
+The script shall dynamically identify the transaction rows in each input CSV file. 
+The script shall read the attendee list and historical data from specified CSV files.
+For each transaction row, the script shall check if it falls under '会議費' or '接待費' based on the '備考' column.
+For relevant transactions, the script shall estimate the number of attendees based on the '利用金額' according to the following rules:
+Minimum 2 attendees.
+Amounts <= 10,000 Yen: Scale from 2 to 4 attendees.
+Amounts > 10,000 Yen: Scale from 4 to 8 attendees.
+For relevant transactions, the script shall select attendee IDs ('1' through '8') based on the following logic:
+Include attendee ID '2' for 90% of the transactions and 'ID1' for the remaining 10%.
+Selected attendee IDs should be sorted numerically.
+The script shall populate the estimated attendee count and the selected attendee IDs into new columns in the processed data.
+The script shall generate a processed CSV file for each input file, including the original data and the newly populated attendee columns.
+The script shall generate an HTML report for each input file, displaying the processed data, and listing the details of all unique attendees selected across the relevant transactions in that file.
+The script shall handle potential errors such as missing files, incorrect file encoding, missing columns, and empty files gracefully, printing warnings and attempting to proceed where possible (e.g., generating minimal reports for empty files or files with missing headers/columns).
+Output files (processed CSV and HTML reports) shall be saved in a specified output folder, with sequential numbering appended to filenames if duplicates exist.
+6. Technical Specifications
+Language: Python 3.10+
+Libraries: pandas, numpy, os, chardet, random.
+Environment: Python environment with necessary libraries installed and access to Google Drive via mapped drive locally.
+Data Format: Input and attendee list are in CSV format. Output is in CSV and HTML format.
+Encoding: The script should attempt to auto-detect CSV file encoding and handle UTF-8. Output files will be saved in UTF-8 with BOM (utf-8-sig).
+Attendee ID Handling: Attendee IDs are treated as integers throughout the selection and population process. Sorting attempts numeric sorting first.
+File Handling: The script uses standard Python os and pandas functions for file path manipulation, reading, and writing. 
