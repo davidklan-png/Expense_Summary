@@ -13,18 +13,18 @@ class TestTransactionFiltering:
             {
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03"],
                 "利用金額": [10000, 5000, 3000],
-                "備考": ["会議費", "交通費", "会議費"],
+                "科目＆No.": ["会議費", "交通費", "会議費"],
             },
         )
 
         result = filter_relevant_transactions(df)
 
         assert len(result) == 2
-        assert all("会議費" in remark for remark in result["備考"])
+        assert all("会議費" in remark for remark in result["科目＆No."])
 
     def test_filter_entertainment_expenses(self):
         """Should filter transactions with 接待費 in remarks."""
-        df = pd.DataFrame({"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "備考": ["接待費", "接待費"]})
+        df = pd.DataFrame({"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "科目＆No.": ["接待費", "接待費"]})
 
         result = filter_relevant_transactions(df)
 
@@ -36,19 +36,19 @@ class TestTransactionFiltering:
             {
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04"],
                 "利用金額": [10000, 5000, 3000, 8000],
-                "備考": ["会議費", "交通費", "接待費", "その他"],
+                "科目＆No.": ["会議費", "交通費", "接待費", "その他"],
             },
         )
 
         result = filter_relevant_transactions(df)
 
         assert len(result) == 2
-        assert result["備考"].iloc[0] == "会議費"
-        assert result["備考"].iloc[1] == "接待費"
+        assert result["科目＆No."].iloc[0] == "会議費"
+        assert result["科目＆No."].iloc[1] == "接待費"
 
     def test_filter_empty_returns_empty(self):
         """Should return empty DataFrame when no matches."""
-        df = pd.DataFrame({"利用日": ["2025-10-01"], "利用金額": [1000], "備考": ["その他"]})
+        df = pd.DataFrame({"利用日": ["2025-10-01"], "利用金額": [1000], "科目＆No.": ["その他"]})
 
         result = filter_relevant_transactions(df)
 
@@ -242,12 +242,7 @@ class TestAmountBasedEstimation:
 
         # Amount outside all brackets: 50,000 yen
         # With default cost_per_person=3000: 50000/3000 = 16.6 -> 16 attendees
-        count = estimate_attendee_count(
-            amount=50000,
-            amount_brackets=brackets,
-            cost_per_person=3000,
-            max_attendees=8
-        )
+        count = estimate_attendee_count(amount=50000, amount_brackets=brackets, cost_per_person=3000, max_attendees=8)
 
         # Should be capped at max_attendees
         assert count == 8
@@ -259,11 +254,7 @@ class TestAmountBasedEstimation:
         }
 
         # Small amount (1000 yen) / 3000 = 0.33 -> should return 2 (minimum)
-        count = estimate_attendee_count(
-            amount=1000,
-            amount_brackets=brackets,
-            cost_per_person=3000
-        )
+        count = estimate_attendee_count(amount=1000, amount_brackets=brackets, cost_per_person=3000)
 
         assert count >= 2
 
@@ -275,7 +266,7 @@ class TestAmountBasedEstimation:
                 amount=10000,
                 min_attendees=2,
                 max_attendees=8,
-                amount_brackets=None  # No brackets = backward compatible mode
+                amount_brackets=None,  # No brackets = backward compatible mode
             )
             assert 2 <= count <= 8
 
@@ -287,12 +278,7 @@ class TestAmountBasedEstimation:
 
         # Amount outside bracket: 20,000 yen
         # With cost_per_person=5000: 20000/5000 = 4 attendees
-        count = estimate_attendee_count(
-            amount=20000,
-            amount_brackets=brackets,
-            cost_per_person=5000,
-            max_attendees=8
-        )
+        count = estimate_attendee_count(amount=20000, amount_brackets=brackets, cost_per_person=5000, max_attendees=8)
 
         assert count == 4
 

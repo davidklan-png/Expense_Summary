@@ -278,13 +278,13 @@ def run(
                     typer.echo(f"  • Filtered out {original_count - len(df)} non-transaction rows")
 
             # Identify relevant transactions (meeting/entertainment expenses)
-            # Check for 備考 column
-            if "備考" not in df.columns:
-                typer.echo("  • SKIPPED: Missing required column '備考'")
+            # Check for 科目＆No. column
+            if "科目＆No." not in df.columns:
+                typer.echo("  • SKIPPED: Missing required column '科目＆No.'")
                 continue
 
             # Create mask for relevant transactions (会議費/接待費)
-            relevant_mask = df["備考"].str.contains("会議費|接待費", na=False, regex=True)
+            relevant_mask = df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
             relevant_count = relevant_mask.sum()
 
             if verbose:
@@ -293,7 +293,7 @@ def run(
                 typer.echo(f"  • Relevant transactions: {relevant_count}")
 
             # Initialize attendee columns for ALL rows (blank by default)
-            df["出席者"] = ""
+            df["人数"] = ""
             for i in range(1, 9):
                 df[f"ID{i}"] = ""
 
@@ -317,7 +317,7 @@ def run(
                         amount_brackets=amount_brackets,
                         cost_per_person=cost_per_person,
                     )
-                    df.loc[idx, "出席者"] = count
+                    df.loc[idx, "人数"] = count
 
                     # Sample attendee IDs with config weights
                     # Extract weights from config (default: 90% ID '2', 10% ID '1')
@@ -337,6 +337,13 @@ def run(
                         col_name = f"ID{i}"
                         df.loc[idx, col_name] = ids_result[col_name]
 
+            # Remove unwanted columns
+            columns_to_drop = ["本人・家族区分", "締前入金区分"]
+            df = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
+
+            # Add new blank 備考 column at the end
+            df["備考"] = ""
+
             # Generate output files
             output_stem = csv_file.stem
             csv_output = config.output_dir / f"{output_stem}.csv"
@@ -346,19 +353,16 @@ def run(
             write_csv_utf8_bom(df, csv_output, handle_duplicates=True, pre_header_rows=pre_header_rows)
             typer.echo(f"  • CSV output: {csv_output.name}")
 
-            # Generate HTML report (only for relevant transactions with attendees)
-            if relevant_count > 0:
-                relevant_transactions = df[relevant_mask].copy()
-                html_path = generate_html_report(
-                    transactions=relevant_transactions,
-                    attendee_reference=attendee_ref,
-                    output_path=html_output,
-                    source_filename=csv_file.name,
-                    handle_duplicates=True,
-                )
-                typer.echo(f"  • HTML report: {html_path.name}")
-            else:
-                typer.echo("  • HTML report: (skipped - no relevant transactions)")
+            # Generate HTML report (include ALL transactions with ALL columns)
+            html_path = generate_html_report(
+                transactions=df,
+                attendee_reference=attendee_ref,
+                output_path=html_output,
+                source_filename=csv_file.name,
+                pre_header_rows=pre_header_rows,
+                handle_duplicates=True,
+            )
+            typer.echo(f"  • HTML report: {html_path.name}")
 
             # Archive file after successful processing
             if file_month:
@@ -635,7 +639,7 @@ def demo(
     # Create sample transaction CSV
     sample_csv = input_dir / "202510_sample.csv"
     sample_csv.write_text(
-        """利用日,ご利用店名及び商品名,利用金額,備考
+        """利用日,ご利用店名及び商品名,利用金額,科目＆No.
 2025-10-01,東京レストラン,15000,会議費
 2025-10-05,カフェABC,5000,接待費
 2025-10-10,ガソリンスタンド,8000,交通費

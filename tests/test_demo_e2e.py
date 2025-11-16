@@ -66,7 +66,7 @@ class TestDemoEndToEndWorkflow:
             lines = f.readlines()
             # Should have header + 5 transactions
             assert len(lines) == 6  # 1 header + 5 data rows
-            assert "利用日,ご利用店名及び商品名,利用金額,備考" in lines[0]
+            assert "利用日,ご利用店名及び商品名,利用金額,科目＆No." in lines[0]
 
         # AND: NameList should have attendees
         with open(namelist, encoding="utf-8") as f:
@@ -117,7 +117,7 @@ class TestDemoEndToEndWorkflow:
         # AND: Output CSV should have attendee columns added
         with open(output_csv, encoding="utf-8-sig") as f:
             header = f.readline()
-            assert "出席者" in header
+            assert "人数" in header
             assert "ID1" in header
             assert "ID8" in header
 
@@ -296,7 +296,7 @@ class TestDemoEndToEndWorkflow:
         assert len(transactions) == 5
 
         # Should have mix of expense types
-        remarks = [t["備考"] for t in transactions]
+        remarks = [t["科目＆No."] for t in transactions]
         assert "会議費" in remarks
         assert "接待費" in remarks
 
@@ -308,7 +308,7 @@ class TestDemoEndToEndWorkflow:
             assert "利用日" in transaction
             assert "ご利用店名及び商品名" in transaction
             assert "利用金額" in transaction
-            assert "備考" in transaction
+            assert "科目＆No." in transaction
 
             # Amounts should be numeric
             amount = transaction["利用金額"]

@@ -13,13 +13,13 @@ def filter_relevant_transactions(df: pd.DataFrame) -> pd.DataFrame:
         df: DataFrame with transaction data
 
     Returns:
-        DataFrame containing only rows where '備考' contains '会議費' or '接待費'
+        DataFrame containing only rows where '科目＆No.' contains '会議費' or '接待費'
     """
-    if "備考" not in df.columns:
+    if "科目＆No." not in df.columns:
         return pd.DataFrame()
 
     # Filter for meeting expenses (会議費) or entertainment expenses (接待費)
-    mask = df["備考"].str.contains("会議費|接待費", na=False, regex=True)
+    mask = df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
 
     return df[mask].copy()
 

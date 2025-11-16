@@ -111,7 +111,7 @@ class TestSelectorEdgeCases:
     """Test selector edge cases."""
 
     def test_filter_transactions_missing_column(self):
-        """Should return empty DataFrame if '備考' column missing."""
+        """Should return empty DataFrame if '科目＆No.' column missing."""
         df = pd.DataFrame({"利用日": ["2025-10-01"], "金額": [1000]})
 
         result = filter_relevant_transactions(df)

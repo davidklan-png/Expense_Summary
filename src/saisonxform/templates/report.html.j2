@@ -54,10 +54,22 @@
             color: white;
             font-weight: bold;
         }
-        tr:nth-child(even) {
+        th.attendee-group-header {
+            background-color: #0052a3;
+            text-align: center;
+            font-size: 13px;
+            padding: 8px;
+        }
+        th.attendee-subheader {
+            background-color: #0066cc;
+            text-align: center;
+            font-size: 11px;
+            padding: 6px;
+        }
+        tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        tr:hover {
+        tbody tr:hover {
             background-color: #f0f0f0;
         }
         .amount {
@@ -100,49 +112,50 @@
     <div class="container">
         <h1>会議費・接待費 処理レポート</h1>
 
+        {% if pre_header_rows and pre_header_rows|length > 0 %}
         <div class="metadata">
-            <p><strong>入力ファイル:</strong> {{ filename }}</p>
-            <p><strong>トランザクション数:</strong> {{ total_transactions }}</p>
-            <p><strong>合計金額:</strong> ¥{{ "{:,.0f}".format(total_amount) }}</p>
-            <p><strong>出席者総数:</strong> {{ unique_attendees|length }}</p>
+            {% for line in pre_header_rows %}
+            <p>{{ line|trim }}</p>
+            {% endfor %}
         </div>
+        {% endif %}
 
         <h2>トランザクション詳細</h2>
         {% if transactions and transactions|length > 0 %}
         <table>
             <thead>
+                {# Row 1: Top-level groupings #}
                 <tr>
-                    <th>利用日</th>
-                    <th>店名・商品名</th>
-                    <th>利用金額</th>
-                    <th>備考</th>
-                    <th>出席者</th>
-                    <th>ID1</th>
-                    <th>ID2</th>
-                    <th>ID3</th>
-                    <th>ID4</th>
-                    <th>ID5</th>
-                    <th>ID6</th>
-                    <th>ID7</th>
-                    <th>ID8</th>
+                    {# Columns before attendee group #}
+                    {% for column in column_names %}
+                        {% if column in ['利用日', 'ご利用店名及び商品名', '利用金額', '科目＆No.', '支払区分名称'] %}
+                            <th rowspan="2">{{ column }}</th>
+                        {% elif column == '人数' %}
+                            {# Start of attendee group: 人数 + 8 ID columns = 9 total #}
+                            <th colspan="9" class="attendee-group-header">会議・接待出席者</th>
+                        {% endif %}
+                        {# Skip ID1-ID8 columns in row 1 (covered by colspan) #}
+                        {% if column == '備考' %}
+                            <th rowspan="2">{{ column }}</th>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {# Row 2: Sub-headers under attendee group #}
+                <tr>
+                    <th>人数</th>
+                    <th colspan="8" class="attendee-subheader">出席者 Participants(ID) → 詳細は次ページ参照</th>
                 </tr>
             </thead>
             <tbody>
                 {% for transaction in transactions %}
                 <tr>
-                    <td>{{ transaction['利用日'] }}</td>
-                    <td>{{ transaction['ご利用店名及び商品名'] }}</td>
-                    <td class="amount">¥{{ "{:,.0f}".format(transaction['利用金額']) }}</td>
-                    <td>{{ transaction['備考'] }}</td>
-                    <td>{{ transaction['出席者'] }}</td>
-                    <td>{{ transaction['ID1'] or '' }}</td>
-                    <td>{{ transaction['ID2'] or '' }}</td>
-                    <td>{{ transaction['ID3'] or '' }}</td>
-                    <td>{{ transaction['ID4'] or '' }}</td>
-                    <td>{{ transaction['ID5'] or '' }}</td>
-                    <td>{{ transaction['ID6'] or '' }}</td>
-                    <td>{{ transaction['ID7'] or '' }}</td>
-                    <td>{{ transaction['ID8'] or '' }}</td>
+                    {% for column in column_names %}
+                    {% if column == '利用金額' and transaction[column] %}
+                    <td class="amount">¥{{ "{:,.0f}".format(transaction[column]) }}</td>
+                    {% else %}
+                    <td>{{ transaction[column] or '' }}</td>
+                    {% endif %}
+                    {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>

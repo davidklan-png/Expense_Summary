@@ -110,7 +110,7 @@ class TestCSVReading:
 
         assert df is not None
         assert "利用日" in df.columns
-        assert "備考" in df.columns
+        assert "科目＆No." in df.columns
         assert len(df) == 1
         assert encoding in ["utf-8", "utf-8-sig"]
         assert pre_header_rows == []  # No pre-header rows
@@ -155,7 +155,6 @@ class TestCSVReading:
                 except ValueError as e:
                     assert "Failed to read" in str(e)
                     assert "with any encoding" in str(e)
-
 
     def test_read_csv_with_pre_header_rows(self, tmp_path):
         """Should preserve pre-header rows when header is not on first line."""
@@ -238,7 +237,7 @@ class TestCSVWriting:
     def test_write_csv_with_pre_header_rows(self, tmp_path):
         """Should write pre-header rows before the CSV data."""
         output_file = tmp_path / "output_with_pre_header.csv"
-        df = pd.DataFrame({"利用日": ["2025-10-01"], "金額": [1000], "備考": ["会議費"]})
+        df = pd.DataFrame({"利用日": ["2025-10-01"], "金額": [1000], "科目＆No.": ["会議費"]})
         pre_header_rows = ["クレジットカード明細\n", "発行日: 2025-10-31\n", "\n"]
 
         write_csv_utf8_bom(df, output_file, pre_header_rows=pre_header_rows)

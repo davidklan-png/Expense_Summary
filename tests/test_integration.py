@@ -109,7 +109,7 @@ class TestEndToEndPipeline:
         csv_file = csv_files[0]
         df = pd.read_csv(csv_file, encoding="utf-8-sig")
 
-        assert "出席者" in df.columns
+        assert "人数" in df.columns
         assert "ID1" in df.columns
         assert "ID8" in df.columns
 
@@ -117,15 +117,15 @@ class TestEndToEndPipeline:
         assert len(df) == 4
 
         # Check relevant rows have attendee data
-        relevant_rows = df[df["備考"].str.contains("会議費|接待費", na=False)]
+        relevant_rows = df[df["科目＆No."].str.contains("会議費|接待費", na=False)]
         assert len(relevant_rows) == 3
-        assert all(relevant_rows["出席者"].notna())  # Has attendee count
+        assert all(relevant_rows["人数"].notna())  # Has attendee count
 
         # Check non-relevant row has blank attendee data
-        non_relevant = df[~df["備考"].str.contains("会議費|接待費", na=False)]
+        non_relevant = df[~df["科目＆No."].str.contains("会議費|接待費", na=False)]
         assert len(non_relevant) == 1
         # Empty strings are read as NaN by pandas
-        assert all(non_relevant["出席者"].isna() | (non_relevant["出席者"] == ""))
+        assert all(non_relevant["人数"].isna() | (non_relevant["人数"] == ""))
 
         # Verify HTML content
         html_file = html_files[0]
@@ -180,10 +180,10 @@ class TestEndToEndPipeline:
         df = pd.read_csv(csv_files[0], encoding="utf-8-sig")
         assert len(df) == 2  # Both rows preserved
         # Empty strings are read as NaN by pandas
-        assert all(df["出席者"].isna() | (df["出席者"] == ""))  # All blank
+        assert all(df["人数"].isna() | (df["人数"] == ""))  # All blank
 
-        # No HTML report (no relevant transactions)
-        assert len(html_files) == 0
+        # HTML report now includes all transactions (not just relevant ones)
+        assert len(html_files) == 1
 
     def test_process_files_missing_namelist(self, integration_env):
         """Should error if NameList.csv is missing."""

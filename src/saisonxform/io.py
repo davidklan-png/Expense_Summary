@@ -7,11 +7,11 @@ import chardet
 import pandas as pd
 
 # Required column names for transaction CSVs
-REQUIRED_COLUMNS = ["利用日", "ご利用店名及び商品名", "利用金額", "備考"]
+REQUIRED_COLUMNS = ["利用日", "ご利用店名及び商品名", "利用金額", "科目＆No."]
 
 # Column name aliases - alternative names for the same columns
 COLUMN_ALIASES = {
-    "備考": ["備考", "科目＆No.", "科目"],  # Remarks/Category column
+    "科目＆No.": ["科目＆No.", "備考", "科目"],  # Category/Subject column
 }
 
 # Encoding fallback chain
@@ -63,7 +63,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
     Find the row index containing the required CSV headers.
 
     Scans the first 10 rows looking for a row that contains all required columns.
-    Supports column name aliases (e.g., '科目＆No.' as an alias for '備考').
+    Supports column name aliases (e.g., '備考' as an alias for '科目＆No.').
 
     Args:
         file_path: Path to the CSV file

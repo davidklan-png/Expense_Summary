@@ -56,6 +56,7 @@ def prepare_report_context(
     transactions: pd.DataFrame,
     attendee_reference: pd.DataFrame,
     filename: str,
+    pre_header_rows: list[str],
 ) -> dict[str, Any]:
     """
     Prepare context dictionary for template rendering.
@@ -64,6 +65,7 @@ def prepare_report_context(
         transactions: Processed transaction DataFrame
         attendee_reference: Attendee reference DataFrame
         filename: Source filename for the report
+        pre_header_rows: Raw pre-header lines from CSV
 
     Returns:
         Dictionary with template context variables
@@ -71,20 +73,19 @@ def prepare_report_context(
     # Get unique attendees
     unique_attendees = get_unique_attendees(transactions, attendee_reference)
 
-    # Calculate metadata
-    total_transactions = len(transactions)
-    total_amount = transactions["利用金額"].sum() if "利用金額" in transactions.columns else 0
-
     # Convert DataFrames to list of dicts for template
     transactions_list = transactions.to_dict("records")
     attendees_list = unique_attendees.to_dict("records")
+
+    # Get column names from DataFrame (preserves order)
+    column_names = transactions.columns.tolist()
 
     return {
         "filename": filename,
         "transactions": transactions_list,
         "unique_attendees": attendees_list,
-        "total_transactions": total_transactions,
-        "total_amount": int(total_amount),
+        "column_names": column_names,
+        "pre_header_rows": pre_header_rows,
     }
 
 
@@ -93,6 +94,7 @@ def generate_html_report(
     attendee_reference: pd.DataFrame,
     output_path: Path,
     source_filename: str,
+    pre_header_rows: list[str] = None,
     template_dir: Optional[Path] = None,
     handle_duplicates: bool = False,
 ) -> Path:
@@ -104,6 +106,7 @@ def generate_html_report(
         attendee_reference: Attendee reference DataFrame
         output_path: Path where HTML should be written
         source_filename: Original source CSV filename
+        pre_header_rows: Raw pre-header lines from CSV (optional)
         template_dir: Directory containing Jinja2 templates (default: project templates/)
         handle_duplicates: If True, append numeric suffix for existing files
 
@@ -135,7 +138,7 @@ def generate_html_report(
     template = env.get_template("report.html.j2")
 
     # Prepare context
-    context = prepare_report_context(transactions, attendee_reference, source_filename)
+    context = prepare_report_context(transactions, attendee_reference, source_filename, pre_header_rows or [])
 
     # Render template
     html_content = template.render(**context)
