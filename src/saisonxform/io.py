@@ -197,7 +197,10 @@ def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> 
 
 
 def write_csv_utf8_bom(
-    df: pd.DataFrame, file_path: Path, handle_duplicates: bool = False, pre_header_rows: Optional[list[str]] = None
+    df: pd.DataFrame,
+    file_path: Path,
+    handle_duplicates: bool = False,
+    pre_header_rows: Optional[list[str]] = None,
 ) -> Path:
     """
     Write DataFrame to CSV with UTF-8 BOM encoding, optionally including pre-header rows.
