@@ -258,15 +258,24 @@ def run(
             typer.echo(f"Processing: {csv_file.name}")
 
             # Read CSV
-            df, encoding = read_csv_with_detection(csv_file)
+            df, encoding, pre_header_rows = read_csv_with_detection(csv_file)
             if verbose:
                 typer.echo(f"  • Detected encoding: {encoding}")
+                if pre_header_rows:
+                    typer.echo(f"  • Pre-header rows: {len(pre_header_rows)}")
             else:
                 typer.echo(f"  • Encoding: {encoding}")
 
             if df.empty:
                 typer.echo("  • SKIPPED: Empty file")
                 continue
+
+            # Remove rows with missing transaction dates (e.g., cardholder name rows)
+            if "利用日" in df.columns:
+                original_count = len(df)
+                df = df[df["利用日"].notna()].copy()
+                if verbose and len(df) < original_count:
+                    typer.echo(f"  • Filtered out {original_count - len(df)} non-transaction rows")
 
             # Identify relevant transactions (meeting/entertainment expenses)
             # Check for 備考 column
@@ -293,10 +302,20 @@ def run(
                 for idx in df[relevant_mask].index:
                     # Estimate attendee count with config parameters
                     amount = df.loc[idx, "利用金額"]
+
+                    # Prepare amount-based parameters if configured
+                    amount_brackets = None
+                    cost_per_person = 3000
+                    if config.amount_based_attendees:
+                        amount_brackets = config.amount_based_attendees.get("brackets")
+                        cost_per_person = config.amount_based_attendees.get("cost_per_person", 3000)
+
                     count = estimate_attendee_count(
                         amount,
                         min_attendees=config.min_attendees,
                         max_attendees=config.max_attendees,
+                        amount_brackets=amount_brackets,
+                        cost_per_person=cost_per_person,
                     )
                     df.loc[idx, "出席者"] = count
 
@@ -323,8 +342,8 @@ def run(
             csv_output = config.output_dir / f"{output_stem}.csv"
             html_output = config.output_dir / f"{output_stem}.html"
 
-            # Write processed CSV (now contains ALL rows)
-            write_csv_utf8_bom(df, csv_output, handle_duplicates=True)
+            # Write processed CSV (now contains ALL rows including pre-header)
+            write_csv_utf8_bom(df, csv_output, handle_duplicates=True, pre_header_rows=pre_header_rows)
             typer.echo(f"  • CSV output: {csv_output.name}")
 
             # Generate HTML report (only for relevant transactions with attendees)

@@ -9,6 +9,11 @@ import pandas as pd
 # Required column names for transaction CSVs
 REQUIRED_COLUMNS = ["利用日", "ご利用店名及び商品名", "利用金額", "備考"]
 
+# Column name aliases - alternative names for the same columns
+COLUMN_ALIASES = {
+    "備考": ["備考", "科目＆No.", "科目"],  # Remarks/Category column
+}
+
 # Encoding fallback chain
 ENCODING_FALLBACKS = ["utf-8-sig", "utf-8", "cp932"]
 
@@ -58,6 +63,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
     Find the row index containing the required CSV headers.
 
     Scans the first 10 rows looking for a row that contains all required columns.
+    Supports column name aliases (e.g., '科目＆No.' as an alias for '備考').
 
     Args:
         file_path: Path to the CSV file
@@ -80,8 +86,16 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
                         if idx >= 10:  # Only scan first 10 rows
                             break
 
-                        # Check if this line contains all required columns
-                        if all(col in line for col in REQUIRED_COLUMNS):
+                        # Check if this line contains all required columns (or their aliases)
+                        has_all_columns = True
+                        for col in REQUIRED_COLUMNS:
+                            # Check if column or any of its aliases are in the line
+                            aliases = COLUMN_ALIASES.get(col, [col])
+                            if not any(alias in line for alias in aliases):
+                                has_all_columns = False
+                                break
+
+                        if has_all_columns:
                             return idx
 
                 # Successfully read file but didn't find header
@@ -97,7 +111,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
         return None
 
 
-def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> tuple[pd.DataFrame, str]:
+def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> tuple[pd.DataFrame, str, list[str]]:
     """
     Read CSV file with automatic encoding detection and header parsing.
 
@@ -106,7 +120,10 @@ def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> 
         encoding: Optional encoding override
 
     Returns:
-        Tuple of (DataFrame, encoding_used)
+        Tuple of (DataFrame, encoding_used, pre_header_rows)
+        - DataFrame: The parsed data starting from header row
+        - encoding_used: The encoding that successfully read the file
+        - pre_header_rows: List of raw lines before the header row (empty if header is on first row)
 
     Warnings:
         - Issues warnings for missing columns
@@ -133,22 +150,40 @@ def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> 
 
     for enc in encodings_to_try:
         try:
-            # Check if file is empty
+            # Check if file is empty and read all lines
             with open(file_path, encoding=enc) as f:
-                content = f.read()
-                if not content.strip():
+                all_lines = f.readlines()
+                if not all_lines or not "".join(all_lines).strip():
                     warnings.warn(f"Empty file: {file_path.name}")
-                    return pd.DataFrame(), enc
+                    return pd.DataFrame(), enc, []
+
+            # Extract pre-header rows (if any)
+            pre_header_rows = all_lines[:header_row] if header_row > 0 else []
 
             # Read CSV
             df = pd.read_csv(file_path, encoding=enc, skiprows=header_row)
 
-            # Check for required columns
+            # Normalize column names using aliases
+            column_mapping = {}
+            for required_col in REQUIRED_COLUMNS:
+                if required_col not in df.columns:
+                    # Check if any alias exists in the DataFrame
+                    aliases = COLUMN_ALIASES.get(required_col, [])
+                    for alias in aliases:
+                        if alias in df.columns:
+                            column_mapping[alias] = required_col
+                            break
+
+            # Apply column renaming if any aliases were found
+            if column_mapping:
+                df = df.rename(columns=column_mapping)
+
+            # Check for required columns after normalization
             missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
             if missing_cols:
                 warnings.warn(f"Missing required columns in {file_path.name}: {missing_cols}")
 
-            return df, enc
+            return df, enc, pre_header_rows
 
         except (UnicodeDecodeError, pd.errors.EmptyDataError) as e:
             last_error = e
@@ -158,17 +193,20 @@ def read_csv_with_detection(file_path: Path, encoding: Optional[str] = None) -> 
     if last_error:
         raise ValueError(f"Failed to read {file_path.name} with any encoding. Last error: {last_error}")
 
-    return pd.DataFrame(), encoding
+    return pd.DataFrame(), encoding, []
 
 
-def write_csv_utf8_bom(df: pd.DataFrame, file_path: Path, handle_duplicates: bool = False) -> Path:
+def write_csv_utf8_bom(
+    df: pd.DataFrame, file_path: Path, handle_duplicates: bool = False, pre_header_rows: Optional[list[str]] = None
+) -> Path:
     """
-    Write DataFrame to CSV with UTF-8 BOM encoding.
+    Write DataFrame to CSV with UTF-8 BOM encoding, optionally including pre-header rows.
 
     Args:
         df: DataFrame to write
         file_path: Output file path
         handle_duplicates: If True, append numeric suffix for existing files
+        pre_header_rows: Optional list of raw text lines to write before the CSV header
 
     Returns:
         Actual path written (may differ if handle_duplicates=True)
@@ -186,6 +224,16 @@ def write_csv_utf8_bom(df: pd.DataFrame, file_path: Path, handle_duplicates: boo
             counter += 1
 
     # Write with UTF-8 BOM
-    df.to_csv(output_path, index=False, encoding="utf-8-sig")
+    if pre_header_rows:
+        # Write pre-header rows first, then the DataFrame
+        with open(output_path, "w", encoding="utf-8-sig") as f:
+            # Write pre-header rows (they already include newlines from readlines())
+            for line in pre_header_rows:
+                f.write(line)
+            # Write DataFrame CSV content
+            df.to_csv(f, index=False)
+    else:
+        # No pre-header rows, write DataFrame directly
+        df.to_csv(output_path, index=False, encoding="utf-8-sig")
 
     return output_path

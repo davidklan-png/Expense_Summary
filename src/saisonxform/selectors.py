@@ -24,23 +24,44 @@ def filter_relevant_transactions(df: pd.DataFrame) -> pd.DataFrame:
     return df[mask].copy()
 
 
-def estimate_attendee_count(amount: float, min_attendees: int = 2, max_attendees: int = 8) -> int:
+def estimate_attendee_count(
+    amount: float,
+    min_attendees: int = 2,
+    max_attendees: int = 8,
+    amount_brackets: dict[tuple[int, int], dict[str, int]] | None = None,
+    cost_per_person: int = 3000,
+) -> int:
     """
     Estimate number of attendees for a transaction.
 
-    Uses uniform random distribution between min and max bounds.
-    Can be extended to use amount-based weighting if configured.
+    Supports three modes:
+    1. Amount-based brackets: Match amount to bracket, randomly select within bracket's min/max
+    2. Fallback calculation: amount / cost_per_person (minimum 2)
+    3. Uniform random: Between min_attendees and max_attendees (backward compatible)
 
     Args:
         amount: Transaction amount in yen
-        min_attendees: Minimum possible attendees (default: 2)
-        max_attendees: Maximum possible attendees (default: 8)
+        min_attendees: Minimum possible attendees for uniform random mode (default: 2)
+        max_attendees: Maximum possible attendees for uniform random mode (default: 8)
+        amount_brackets: Optional dict mapping (min_amount, max_amount) to {min, max} attendees
+        cost_per_person: Fallback cost per person in yen (default: 3000)
 
     Returns:
         Estimated attendee count
     """
-    # For now, use uniform random distribution
-    # Future enhancement: Add amount-based weighting from config
+    # Mode 1: Amount-based brackets (if provided)
+    if amount_brackets:
+        for (bracket_min, bracket_max), attendee_range in amount_brackets.items():
+            if bracket_min <= amount <= bracket_max:
+                # Found matching bracket - randomly select within range
+                return random.randint(attendee_range["min"], attendee_range["max"])
+
+        # No bracket matched - use fallback calculation (Mode 2)
+        calculated = max(2, int(amount / cost_per_person))
+        # Cap at max_attendees to avoid unrealistic values
+        return min(calculated, max_attendees)
+
+    # Mode 3: Uniform random distribution (backward compatible, no amount config)
     return random.randint(min_attendees, max_attendees)
 
 

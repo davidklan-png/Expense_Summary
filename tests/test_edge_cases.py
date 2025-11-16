@@ -79,9 +79,10 @@ class TestIOEdgeCases:
         test_file.write_text("", encoding="utf-8")
 
         with pytest.warns(UserWarning, match="Empty file"):
-            df, encoding = read_csv_with_detection(test_file)
+            df, encoding, pre_header_rows = read_csv_with_detection(test_file)
             assert df.empty
             assert encoding is not None
+            assert pre_header_rows == []
 
     def test_read_csv_nonexistent_file(self, tmp_path):
         """Should raise FileNotFoundError for missing file."""
@@ -98,10 +99,11 @@ class TestIOEdgeCases:
         test_file.write_text("利用日,ご利用店名及び商品名,利用金額,備考\ntest,data,1000,会議費", encoding="utf-8")
 
         # Read with explicit wrong encoding, should fallback
-        df, encoding = read_csv_with_detection(test_file, encoding="ascii")
+        df, encoding, pre_header_rows = read_csv_with_detection(test_file, encoding="ascii")
 
         # Should successfully read using fallback
         assert df is not None
+        assert pre_header_rows == []
         assert len(df) == 1
 
 

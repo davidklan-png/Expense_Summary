@@ -53,6 +53,9 @@ class Config:
         self.max_attendees = self._config.get("max_attendees", 8)
         self.primary_id_weights = self._config.get("primary_id_weights", {"2": 0.9, "1": 0.1})
 
+        # Amount-based attendee estimation (optional)
+        self.amount_based_attendees = self._load_amount_based_config()
+
     def _load_config(self) -> None:
         """Load configuration from all sources with proper precedence."""
         # Start with pyproject.toml defaults
@@ -89,6 +92,65 @@ class Config:
         for key, value in env_overrides.items():
             if value is not None:
                 self._config[key] = value
+
+    def _load_amount_based_config(self) -> dict[str, Any] | None:
+        """Load and validate amount-based attendee estimation configuration.
+
+        Returns:
+            Dict with 'brackets' and 'cost_per_person' keys, or None if not configured
+
+        Warns (non-fatal) if configuration is invalid.
+        """
+        import warnings
+
+        amount_config = self._config.get("amount_based_attendees")
+        if not amount_config or not isinstance(amount_config, dict):
+            # Not configured - use default random behavior
+            return None
+
+        try:
+            # Parse brackets from config
+            brackets_config = amount_config.get("brackets", {})
+            cost_per_person = amount_config.get("cost_per_person", 3000)
+
+            # Convert string keys "min-max" to tuple keys (min, max)
+            parsed_brackets = {}
+            for range_str, attendee_range in brackets_config.items():
+                try:
+                    min_amount, max_amount = map(int, range_str.split("-"))
+                    if min_amount < 0 or max_amount < min_amount:
+                        raise ValueError(f"Invalid range: {range_str}")
+
+                    if not isinstance(attendee_range, dict):
+                        raise ValueError(f"Bracket {range_str} must have min/max attendees")
+
+                    min_att = attendee_range.get("min")
+                    max_att = attendee_range.get("max")
+
+                    if min_att is None or max_att is None:
+                        raise ValueError(f"Bracket {range_str} missing min or max attendees")
+
+                    if min_att < 1 or max_att < min_att:
+                        raise ValueError(f"Invalid attendee range in {range_str}: min={min_att}, max={max_att}")
+
+                    parsed_brackets[(min_amount, max_amount)] = {"min": min_att, "max": max_att}
+
+                except Exception as e:
+                    warnings.warn(f"Skipping invalid amount bracket '{range_str}': {e}")
+                    continue
+
+            if not parsed_brackets:
+                warnings.warn("No valid amount brackets found. Using default random behavior.")
+                return None
+
+            return {
+                "brackets": parsed_brackets,
+                "cost_per_person": cost_per_person,
+            }
+
+        except Exception as e:
+            warnings.warn(f"Failed to load amount-based config: {e}. Using default random behavior.")
+            return None
 
     def _resolve_path(self, path_str: str) -> Path:
         """Resolve a path string relative to project root if not absolute.
