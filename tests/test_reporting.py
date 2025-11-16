@@ -14,8 +14,8 @@ def sample_transactions():
             "利用日": ["2025-10-01", "2025-10-02", "2025-10-03"],
             "ご利用店名及び商品名": ["東京レストラン", "カフェABC", "ホテル会議室"],
             "利用金額": [15000, 5000, 25000],
-            "備考": ["会議費", "接待費", "会議費"],
-            "出席者": [4, 2, 6],
+            "科目＆No.": ["会議費", "接待費", "会議費"],
+            "人数": [4, 2, 6],
             "ID1": ["1", "2", "1"],
             "ID2": ["2", "3", "2"],
             "ID3": ["3", "", "3"],
@@ -97,25 +97,28 @@ class TestReportContextPreparation:
             transactions=sample_transactions,
             attendee_reference=attendee_reference,
             filename="202510_A.csv",
+            pre_header_rows=[],
         )
 
         assert "filename" in context
         assert "transactions" in context
         assert "unique_attendees" in context
-        assert "total_transactions" in context
-        assert "total_amount" in context
+        assert "column_names" in context
+        assert "pre_header_rows" in context
 
     def test_prepare_context_metadata(self, sample_transactions, attendee_reference):
         """Should include correct metadata."""
+        pre_header = ["Test Header\n", "Test Date\n"]
         context = prepare_report_context(
             transactions=sample_transactions,
             attendee_reference=attendee_reference,
             filename="202510_A.csv",
+            pre_header_rows=pre_header,
         )
 
         assert context["filename"] == "202510_A.csv"
-        assert context["total_transactions"] == 3
-        assert context["total_amount"] == 45000  # 15000 + 5000 + 25000
+        assert context["pre_header_rows"] == pre_header
+        assert len(context["column_names"]) > 0
 
     def test_prepare_context_transactions_as_dicts(self, sample_transactions, attendee_reference):
         """Should convert transactions DataFrame to list of dicts."""
@@ -123,6 +126,7 @@ class TestReportContextPreparation:
             transactions=sample_transactions,
             attendee_reference=attendee_reference,
             filename="test.csv",
+            pre_header_rows=[],
         )
 
         assert isinstance(context["transactions"], list)
@@ -136,6 +140,7 @@ class TestReportContextPreparation:
             transactions=sample_transactions,
             attendee_reference=attendee_reference,
             filename="test.csv",
+            pre_header_rows=[],
         )
 
         assert isinstance(context["unique_attendees"], list)
@@ -250,8 +255,8 @@ class TestHTMLReportGeneration:
                 "利用日": [],
                 "ご利用店名及び商品名": [],
                 "利用金額": [],
-                "備考": [],
-                "出席者": [],
+                "科目＆No.": [],
+                "人数": [],
                 "ID1": [],
                 "ID2": [],
                 "ID3": [],

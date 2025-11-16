@@ -1,55 +1,49 @@
-# Saison Transform Configuration
-#
-# Configuration precedence order:
-#   1. Environment variables (INPUT_DIR, REFERENCE_DIR, OUTPUT_DIR, ARCHIVE_DIR)
-#   2. This config.toml file
-#   3. pyproject.toml [tool.saisonxform] section
-#
-# Paths can be:
-#   - Relative (resolved from project root): "../Input"
-#   - Absolute: "/Users/username/Data/Input"
-#
-# Directory requirements:
-#   - Input/, Reference/, Output/ must pre-exist (validated at startup)
-#   - Archive/ is optional (auto-created on first use)
+# Saison Transform Configuration Example
+# Copy this file to config.toml and adjust paths as needed
 
 [paths]
-# Raw CSV files from credit card statements
+# Directory paths (relative to project root or absolute)
+# Default: ../Input, ../Reference, ../Output, ../Archive
 input_dir = "../Input"
-
-# Reference data (NameList.csv, rule sheets)
 reference_dir = "../Reference"
-
-# Generated CSV and HTML reports
 output_dir = "../Output"
-
-# Processed files archived by month (YYYYMM subfolders)
 archive_dir = "../Archive"
 
 [processing]
-# Attendee estimation bounds (uniform random distribution)
+# Attendee count estimation range
+# Default: Random between 2-8 attendees per transaction
 min_attendees = 2
 max_attendees = 8
 
-# Attendee ID sampling weights (90% ID '2', 10% ID '1')
-primary_id_weights = { "2" = 0.9, "1" = 0.1 }
+# Primary ID selection weights (must sum to 1.0)
+# Default: 90% probability for ID '2', 10% for ID '1'
+# The primary ID is selected first, then remaining slots filled randomly
+[processing.primary_id_weights]
+"2" = 0.9  # 90% chance
+"1" = 0.1  # 10% chance
 
-# Maximum attendees per transaction (ID1 through ID8)
-max_attendee_slots = 8
+# Alternative: Equal weights for IDs '1' and '2'
+# [processing.primary_id_weights]
+# "1" = 0.5
+# "2" = 0.5
 
-[output]
-# Output file encoding (utf-8-sig = UTF-8 with BOM)
-encoding = "utf-8-sig"
+# Alternative: Prefer ID '1' over ID '2'
+# [processing.primary_id_weights]
+# "1" = 0.7
+# "2" = 0.3
 
-# Sequential numbering for duplicate filenames
-enable_sequential_numbering = true
+# Amount-based attendee estimation (optional)
+# If this section is present, attendee counts are determined by transaction amount
+# Each bracket defines an amount range and corresponding attendee count range
+# Format: "min_amount-max_amount" = { min = X, max = Y }
+# Amounts are in yen. Use 999999999 for "unlimited" upper bound.
+[processing.amount_based_attendees]
+# Fallback: if no bracket matches, calculate as amount / cost_per_person (minimum 2)
+cost_per_person = 3000  # ¥3,000 per person average
 
-[archival]
-# Archive processed files immediately after successful processing
-enable_archival = true
-
-# Create retry markers for failed archival operations
-enable_retry_markers = true
-
-# Already-processed month protection (requires --force to override)
-protect_processed_months = true
+# Amount brackets (randomly select between min and max attendees)
+[processing.amount_based_attendees.brackets]
+"0-5000" = { min = 2, max = 3 }        # Small transactions: 2-3 people
+"5001-15000" = { min = 3, max = 5 }    # Medium transactions: 3-5 people
+"15001-30000" = { min = 5, max = 8 }   # Large transactions: 5-8 people
+"30001-999999999" = { min = 6, max = 8 }  # Very large: 6-8 people

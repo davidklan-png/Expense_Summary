@@ -13,18 +13,18 @@ class TestTransactionFiltering:
             {
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03"],
                 "利用金額": [10000, 5000, 3000],
-                "備考": ["会議費", "交通費", "会議費"],
+                "科目＆No.": ["会議費", "交通費", "会議費"],
             },
         )
 
         result = filter_relevant_transactions(df)
 
         assert len(result) == 2
-        assert all("会議費" in remark for remark in result["備考"])
+        assert all("会議費" in remark for remark in result["科目＆No."])
 
     def test_filter_entertainment_expenses(self):
         """Should filter transactions with 接待費 in remarks."""
-        df = pd.DataFrame({"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "備考": ["接待費", "接待費"]})
+        df = pd.DataFrame({"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "科目＆No.": ["接待費", "接待費"]})
 
         result = filter_relevant_transactions(df)
 
@@ -36,19 +36,19 @@ class TestTransactionFiltering:
             {
                 "利用日": ["2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04"],
                 "利用金額": [10000, 5000, 3000, 8000],
-                "備考": ["会議費", "交通費", "接待費", "その他"],
+                "科目＆No.": ["会議費", "交通費", "接待費", "その他"],
             },
         )
 
         result = filter_relevant_transactions(df)
 
         assert len(result) == 2
-        assert result["備考"].iloc[0] == "会議費"
-        assert result["備考"].iloc[1] == "接待費"
+        assert result["科目＆No."].iloc[0] == "会議費"
+        assert result["科目＆No."].iloc[1] == "接待費"
 
     def test_filter_empty_returns_empty(self):
         """Should return empty DataFrame when no matches."""
-        df = pd.DataFrame({"利用日": ["2025-10-01"], "利用金額": [1000], "備考": ["その他"]})
+        df = pd.DataFrame({"利用日": ["2025-10-01"], "利用金額": [1000], "科目＆No.": ["その他"]})
 
         result = filter_relevant_transactions(df)
 
@@ -213,3 +213,88 @@ class TestIDDictionaryFormat:
         assert populated == 2
         assert result["ID3"] == ""
         assert result["ID8"] == ""
+
+
+class TestAmountBasedEstimation:
+    """Test amount-based attendee estimation with brackets."""
+
+    def test_bracket_matching_returns_within_range(self):
+        """Should return attendee count within bracket's min/max range."""
+        brackets = {
+            (0, 5000): {"min": 2, "max": 3},
+            (5001, 15000): {"min": 3, "max": 5},
+        }
+
+        # Test multiple times to verify randomness within range
+        for _ in range(10):
+            count = estimate_attendee_count(amount=3000, amount_brackets=brackets)
+            assert 2 <= count <= 3
+
+            count = estimate_attendee_count(amount=10000, amount_brackets=brackets)
+            assert 3 <= count <= 5
+
+    def test_no_bracket_match_uses_fallback(self):
+        """Should use cost-per-person fallback when no bracket matches."""
+        brackets = {
+            (0, 5000): {"min": 2, "max": 3},
+            (5001, 15000): {"min": 3, "max": 5},
+        }
+
+        # Amount outside all brackets: 50,000 yen
+        # With default cost_per_person=3000: 50000/3000 = 16.6 -> 16 attendees
+        count = estimate_attendee_count(amount=50000, amount_brackets=brackets, cost_per_person=3000, max_attendees=8)
+
+        # Should be capped at max_attendees
+        assert count == 8
+
+    def test_fallback_minimum_two_attendees(self):
+        """Should return minimum 2 attendees in fallback mode."""
+        brackets = {
+            (10000, 999999): {"min": 5, "max": 8},
+        }
+
+        # Small amount (1000 yen) / 3000 = 0.33 -> should return 2 (minimum)
+        count = estimate_attendee_count(amount=1000, amount_brackets=brackets, cost_per_person=3000)
+
+        assert count >= 2
+
+    def test_no_brackets_uses_uniform_random(self):
+        """Should use uniform random when brackets not configured."""
+        # Test multiple times to ensure it stays within bounds
+        for _ in range(10):
+            count = estimate_attendee_count(
+                amount=10000,
+                min_attendees=2,
+                max_attendees=8,
+                amount_brackets=None,  # No brackets = backward compatible mode
+            )
+            assert 2 <= count <= 8
+
+    def test_custom_cost_per_person(self):
+        """Should use custom cost-per-person in fallback calculation."""
+        brackets = {
+            (0, 5000): {"min": 2, "max": 3},
+        }
+
+        # Amount outside bracket: 20,000 yen
+        # With cost_per_person=5000: 20000/5000 = 4 attendees
+        count = estimate_attendee_count(amount=20000, amount_brackets=brackets, cost_per_person=5000, max_attendees=8)
+
+        assert count == 4
+
+    def test_bracket_edge_cases(self):
+        """Should match brackets at boundary values."""
+        brackets = {
+            (0, 5000): {"min": 2, "max": 3},
+            (5001, 15000): {"min": 3, "max": 5},
+        }
+
+        # Test boundary values
+        count_lower = estimate_attendee_count(amount=0, amount_brackets=brackets)
+        assert 2 <= count_lower <= 3
+
+        count_upper = estimate_attendee_count(amount=5000, amount_brackets=brackets)
+        assert 2 <= count_upper <= 3
+
+        count_next = estimate_attendee_count(amount=5001, amount_brackets=brackets)
+        assert 3 <= count_next <= 5

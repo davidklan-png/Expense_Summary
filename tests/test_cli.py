@@ -159,7 +159,7 @@ class TestCLIRetryMarkerHandling:
             encoding="utf-8",
         )
 
-        # Expect warning about missing '備考' column (file has escaped newline)
+        # Expect warning about missing '科目＆No.' column (file has escaped newline)
         with pytest.warns(UserWarning, match="Missing required columns"):
             result = runner.invoke(
                 app,
