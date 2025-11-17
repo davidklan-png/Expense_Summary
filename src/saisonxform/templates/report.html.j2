@@ -110,7 +110,6 @@
 </head>
 <body>
     <div class="container">
-        <h1>会議費・接待費 処理レポート</h1>
 
         {% if pre_header_rows and pre_header_rows|length > 0 %}
         <div class="metadata">
@@ -120,7 +119,6 @@
         </div>
         {% endif %}
 
-        <h2>トランザクション詳細</h2>
         {% if transactions and transactions|length > 0 %}
         <table>
             <thead>
@@ -166,7 +164,7 @@
         </div>
         {% endif %}
 
-        <h2>選択された出席者</h2>
+        <h2>出席者詳細</h2>
         {% if unique_attendees and unique_attendees|length > 0 %}
         <div class="attendee-list">
             {% for attendee in unique_attendees %}
