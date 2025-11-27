@@ -1,0 +1,40 @@
+#!/bin/bash
+# Launch Saison Transform Web Interface on Network
+# For WSL2 users: Access via your Windows host IP
+
+echo "🚀 Starting Saison Transform Web Interface (Network Mode)..."
+echo ""
+echo "⚠️  WSL2 Network Configuration:"
+echo "  WSL2 runs in a virtualized network environment."
+echo "  To access from other devices, you have two options:"
+echo ""
+echo "  Option 1 (Recommended): Use Windows host IP"
+echo "    From your Windows machine, find your WiFi IP with: ipconfig"
+echo "    Look for 'Wireless LAN adapter Wi-Fi' → 'IPv4 Address'"
+echo "    Access from any device: http://YOUR_WINDOWS_IP:8502"
+echo "    (e.g., http://192.168.1.9:8502)"
+echo ""
+echo "  Option 2: WSL2 Port Forwarding (automatic on some Windows versions)"
+echo "    Windows may automatically forward WSL2 ports."
+echo "    Try accessing: http://192.168.1.9:8502"
+echo ""
+echo "  If Option 2 doesn't work, run this in Windows PowerShell (as Admin):"
+echo "    netsh interface portproxy add v4tov4 listenport=8502 listenaddress=0.0.0.0 connectport=8502 connectaddress=$(hostname -I | awk '{print $1}')"
+echo ""
+echo "📍 Server URLs:"
+echo "  Local (WSL):     http://localhost:8502"
+echo "  WSL2 Internal:   http://$(hostname -I | awk '{print $1}'):8502"
+echo "  Windows Host:    http://192.168.1.9:8502 (use your actual Windows IP)"
+echo ""
+echo "Features:"
+echo "  📤 Drag & drop CSV files for upload"
+echo "  ⚙️  Configure processing parameters"
+echo "  ✏️  Edit data interactively in tables"
+echo "  💾 Download processed CSV and HTML reports"
+echo ""
+echo "Press Ctrl+C to stop the server"
+echo ""
+
+# Activate virtual environment and run streamlit
+cd "$(dirname "$0")"
+.venv/bin/python -m streamlit run web_app.py --server.port 8502 --server.address 0.0.0.0 --server.headless true

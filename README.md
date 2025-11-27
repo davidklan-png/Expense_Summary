@@ -11,6 +11,65 @@ Financial transaction processor for identifying meeting and entertainment expens
 - 🗄️ **Auto-Archival** - Moves processed files to monthly archives automatically
 - 🔐 **Security-First** - Prevents accidental data commits with git repository validation
 - 🌐 **Encoding Detection** - Auto-detects UTF-8, UTF-8 BOM, and CP932/Shift-JIS encodings
+- 🖥️ **Web Interface** - Interactive browser-based UI with drag-and-drop file upload, data editing, and network access
+
+## Web Interface
+
+The Saison Transform includes a user-friendly web interface built with Streamlit for processing files interactively.
+
+### Starting the Web Interface
+
+```bash
+# Local access only (default)
+./run_web.sh
+
+# Access from other devices on your network
+./run_web_network.sh
+```
+
+### Network Access (WSL2/Windows Users)
+
+To access the web interface from other devices on your WiFi:
+
+1. **Start the server in network mode:**
+   ```bash
+   ./run_web_network.sh
+   ```
+
+2. **Setup port forwarding (WSL2 only - first time setup):**
+
+   Open PowerShell as Administrator on Windows and run:
+   ```powershell
+   # Option 1: Run the automated setup script
+   cd path\to\saisonxform
+   .\setup_port_forward.ps1
+
+   # Option 2: Manual setup
+   netsh interface portproxy add v4tov4 listenport=8502 listenaddress=0.0.0.0 connectport=8502 connectaddress=<WSL_IP>
+   ```
+
+3. **Find your Windows IP address:**
+   ```powershell
+   ipconfig
+   # Look for "Wireless LAN adapter Wi-Fi" -> "IPv4 Address"
+   # Example: 192.168.1.9
+   ```
+
+4. **Access from any device on your network:**
+   - Open a browser on your phone, tablet, or another computer
+   - Navigate to: `http://YOUR_WINDOWS_IP:8502`
+   - Example: `http://192.168.1.9:8502`
+
+### Features
+
+- Drag & drop CSV file upload
+- Interactive data editing with live preview
+- Attendee management (add/edit/delete)
+- Batch file processing
+- Download all processed files as ZIP
+- Real-time attendee count calculation
+
+See [WEB_INTERFACE_GUIDE.md](docs/guides/WEB_INTERFACE_GUIDE.md) for detailed usage instructions.
 
 ## Quick Start
 
@@ -503,10 +562,10 @@ mkdir -p Input Reference Output
 
 ## Documentation
 
-- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development phases and implementation details
+- **[DEVELOPMENT.md](docs/development/DEVELOPMENT.md)** - Development phases and implementation details
 - **[demo/README.md](demo/README.md)** - Demo usage instructions
 - **[config.toml.example](config.toml.example)** - Configuration options
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CONTRIBUTING.md](docs/development/CONTRIBUTING.md)** - Contribution guidelines
 - **[OpenSpec](openspec/)** - Technical specifications
 
 ## Contributing
@@ -518,7 +577,7 @@ mkdir -p Input Reference Output
 5. Use conventional commits: `feat:`, `fix:`, `test:`, `docs:`
 6. Submit PR with clear description
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](docs/development/CONTRIBUTING.md) for details.
 
 ## License
 
