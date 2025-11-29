@@ -846,34 +846,51 @@ def main():
             st.markdown("### 📦 Batch Download")
             col1, col2 = st.columns([2, 1])
             with col1:
-                st.info(f"📊 {len(st.session_state.processed_data)} file(s) ready to download")
+                file_count = len(st.session_state.processed_data)
+                st.info(f"📊 {file_count} file(s) ready → {file_count * 2} files total (CSV + HTML per file)")
             with col2:
-                # Create zip file with all CSVs
+                # Create zip file with all CSVs and HTML reports
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     for filename, data_dict in st.session_state.processed_data.items():
                         df = data_dict["data"]
                         pre_header = data_dict["pre_header"]
 
-                        # Create CSV content
+                        # Add CSV file
                         csv_buffer = io.StringIO()
                         if pre_header:
                             for row in pre_header:
                                 csv_buffer.write(",".join(str(val) for val in row) + "\n")
                         df.to_csv(csv_buffer, index=False, encoding="utf-8-sig")
                         csv_data = csv_buffer.getvalue()
-
-                        # Add to zip
                         zip_file.writestr(filename, csv_data.encode('utf-8-sig'))
+
+                        # Add HTML report (if attendee reference is available)
+                        if st.session_state.attendee_ref is not None:
+                            try:
+                                html_output = Path(f"/tmp/{filename.replace('.csv', '.html')}")
+                                generate_html_report(
+                                    transactions=df,
+                                    attendee_reference=st.session_state.attendee_ref,
+                                    output_path=html_output,
+                                    source_filename=filename,
+                                    pre_header_rows=pre_header,
+                                    handle_duplicates=False,
+                                )
+                                html_content = html_output.read_text(encoding="utf-8")
+                                zip_file.writestr(filename.replace(".csv", ".html"), html_content)
+                                html_output.unlink()  # Clean up temp file
+                            except Exception as e:
+                                st.warning(f"⚠️ Could not generate HTML for {filename}: {e}")
 
                 zip_buffer.seek(0)
 
                 st.download_button(
-                    label="📦 Download All & Reset",
+                    label="📦 Download All (CSV + HTML) & Reset",
                     data=zip_buffer.getvalue(),
                     file_name="processed_files.zip",
                     mime="application/zip",
-                    help="Download all processed files as a ZIP archive and reset the session",
+                    help="Download all processed files (CSV and HTML) as a ZIP archive and reset the session",
                     type="primary",
                     width="stretch",
                     on_click=lambda: reset_session()
