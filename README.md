@@ -11,6 +11,91 @@ Financial transaction processor for identifying meeting and entertainment expens
 - 🗄️ **Auto-Archival** - Moves processed files to monthly archives automatically
 - 🔐 **Security-First** - Prevents accidental data commits with git repository validation
 - 🌐 **Encoding Detection** - Auto-detects UTF-8, UTF-8 BOM, and CP932/Shift-JIS encodings
+- 🖥️ **Web Interface** - Interactive browser-based UI with drag-and-drop file upload, data editing, and network access
+
+## Web Interface
+
+The Saison Transform includes a user-friendly web interface built with Streamlit for processing files interactively.
+
+### Starting the Web Interface
+
+```bash
+# Local access only (default)
+./run_web.sh
+
+# Access from other devices on your network
+./run_web_network.sh
+```
+
+### Network Access (WSL2/Windows Users)
+
+To access the web interface from other devices on your WiFi:
+
+1. **Start the server in network mode:**
+   ```bash
+   ./run_web_network.sh
+   ```
+
+2. **Setup port forwarding (WSL2 only - first time setup):**
+
+   Open PowerShell as Administrator on Windows and run:
+   ```powershell
+   # Option 1: Run the automated setup script
+   cd path\to\saisonxform
+   .\setup_port_forward.ps1
+
+   # Option 2: Manual setup
+   netsh interface portproxy add v4tov4 listenport=8502 listenaddress=0.0.0.0 connectport=8502 connectaddress=<WSL_IP>
+   ```
+
+3. **Find your Windows IP address:**
+   ```powershell
+   ipconfig
+   # Look for "Wireless LAN adapter Wi-Fi" -> "IPv4 Address"
+   # Example: 192.168.1.9
+   ```
+
+4. **Access from any device on your network:**
+   - Open a browser on your phone, tablet, or another computer
+   - Navigate to: `http://YOUR_WINDOWS_IP:8502`
+   - Example: `http://192.168.1.9:8502`
+
+### Features
+
+- Drag & drop CSV file upload
+- Interactive data editing with live preview
+- Attendee management (add/edit/delete)
+- Batch file processing
+- Download all processed files as ZIP
+- Real-time attendee count calculation
+
+See [WEB_INTERFACE_GUIDE.md](docs/guides/WEB_INTERFACE_GUIDE.md) for detailed usage instructions.
+
+## Directory Structure
+
+Saison Transform uses a data directory structure within the project for easy access and persistence:
+
+```
+saisonxform/
+├── data/
+│   ├── input/                    # Upload CSV files here (via web interface)
+│   ├── reference/                # Persistent configuration and reference data
+│   │   ├── NameList.csv          # Attendee list (persists in git)
+│   │   └── config.toml           # Configuration parameters (persists in git)
+│   ├── output/                   # Processed CSV and HTML reports
+│   └── archive/                  # Monthly archives of processed files
+├── config.toml                   # Legacy config location (fallback)
+└── web_app.py                    # Web interface
+```
+
+### Important Notes:
+
+- **Input files**: Upload transaction CSV files through the web interface only
+- **Reference folder**: Contains NameList.csv and config.toml which persist in git
+- **Configuration**: Stored in `data/reference/config.toml` for persistence across sessions
+- **Output/Archive**: Generated files are excluded from git (user data only)
+- **Best Practice**: Always use the web interface for processing real data
+- **Config Priority**: data/reference/config.toml → config.toml (root) → pyproject.toml defaults
 
 ## Quick Start
 
@@ -138,27 +223,30 @@ open ./saisonxform-demo/Output/202510_sample.html
 
 ### Setup for Production Use
 
+The project comes with a `data/` directory structure ready to use:
+
 ```bash
-# 1. Create directory structure (outside any git repository)
-mkdir -p ~/saisonxform-data/{Input,Reference,Output}
+# 1. The directory structure is already created in data/
+# data/input, data/reference, data/output, data/archive
 
-# 2. Create your attendee reference list
-cat > ~/saisonxform-data/Reference/NameList.csv << 'EOF'
-ID,Name,Title,Company
-1,山田太郎,部長,ABC株式会社
-2,佐藤花子,課長,XYZ株式会社
-3,鈴木一郎,主任,DEF株式会社
-EOF
+# 2. Configuration and reference data are in data/reference/ (persisted in git)
+# Verify or update them:
+cat data/reference/NameList.csv      # Attendee list
+cat data/reference/config.toml       # Configuration parameters
 
-# 3. Copy your transaction CSV files to Input directory
-cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
+# 3. Use the web interface to upload and process files (recommended)
+./run_web.sh           # Local access
+./run_web_network.sh   # Network access
 
-# 4. Run the pipeline
-sf --input ~/saisonxform-data/Input \
-   --reference ~/saisonxform-data/Reference \
-   --output ~/saisonxform-data/Output \
-   --verbose
+# 4. Or use CLI for batch processing
+sf run --verbose
 ```
+
+**Note**:
+- The recommended workflow is to use the web interface for all real data processing
+- Upload files through the web UI rather than manually copying to data/input/
+- Configuration is stored in `data/reference/config.toml` and persists in git
+- Edit config parameters in `data/reference/config.toml` to customize processing behavior
 
 ### Usage
 
@@ -281,33 +369,65 @@ Beautiful report with:
 
 ## Configuration
 
+### Configuration Location
+
+The configuration is stored in `data/reference/config.toml` and persists in git for consistency across sessions.
+
 ### Priority Order
-1. CLI flags (highest)
-2. Environment variables
-3. `config.toml`
-4. `pyproject.toml` (lowest)
+1. Environment variables (highest)
+2. Explicitly provided config file (`--config` option)
+3. `data/reference/config.toml` (persistent configuration)
+4. `config.toml` (project root fallback)
+5. `pyproject.toml` (defaults, lowest)
 
-### Using config.toml
+### Amount-Based Attendee Estimation
 
-Create `config.toml` in project root:
+The system supports two modes for determining attendee counts:
+
+**Enabled (Default):** Attendee counts are determined by transaction amount using configurable brackets.
+**Disabled:** Random selection between min_attendees and max_attendees.
+
+Edit `data/reference/config.toml`:
+
+```toml
+[processing.amount_based_attendees]
+enabled = true  # Set to false to disable amount-based logic
+
+# Fallback calculation
+cost_per_person = 3000
+
+# Amount brackets (yen)
+[processing.amount_based_attendees.brackets]
+"0-5000" = { min = 2, max = 3 }        # Small transactions
+"5001-15000" = { min = 3, max = 5 }    # Medium transactions
+"15001-30000" = { min = 5, max = 8 }   # Large transactions
+"30001-999999999" = { min = 6, max = 8 }  # Very large
+```
+
+**How it works:**
+- When enabled: Matches transaction amount to bracket, randomly selects within bracket's min/max
+- If no bracket matches: Calculates `amount / cost_per_person` (minimum 2)
+- When disabled: Random selection between `min_attendees` and `max_attendees`
+
+### Other Configuration Options
 
 ```toml
 [paths]
-input_dir = "../Input"
-reference_dir = "../Reference"
-output_dir = "../Output"
-archive_dir = "../Archive"
+input_dir = "data/input"
+reference_dir = "data/reference"
+output_dir = "data/output"
+archive_dir = "data/archive"
 
 [processing]
-min_attendees = 2          # Minimum attendees
-max_attendees = 8          # Maximum attendees
+min_attendees = 2          # Used when amount-based is disabled
+max_attendees = 8          # Also caps fallback calculations
 
 [processing.primary_id_weights]
-"2" = 0.9                  # 90% probability
-"1" = 0.1                  # 10% probability
+"2" = 0.9                  # 90% probability for ID '2'
+"1" = 0.1                  # 10% probability for ID '1'
 ```
 
-See [`config.toml.example`](config.toml.example) for full configuration options.
+See [`data/reference/config.toml`](data/reference/config.toml) for full configuration with comments.
 
 ### Using Environment Variables
 
@@ -503,10 +623,10 @@ mkdir -p Input Reference Output
 
 ## Documentation
 
-- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development phases and implementation details
+- **[DEVELOPMENT.md](docs/development/DEVELOPMENT.md)** - Development phases and implementation details
 - **[demo/README.md](demo/README.md)** - Demo usage instructions
 - **[config.toml.example](config.toml.example)** - Configuration options
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CONTRIBUTING.md](docs/development/CONTRIBUTING.md)** - Contribution guidelines
 - **[OpenSpec](openspec/)** - Technical specifications
 
 ## Contributing
@@ -518,7 +638,89 @@ mkdir -p Input Reference Output
 5. Use conventional commits: `feat:`, `fix:`, `test:`, `docs:`
 6. Submit PR with clear description
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](docs/development/CONTRIBUTING.md) for details.
+
+## Deployment
+
+### Streamlit Cloud Deployment
+
+Deploy the web interface to Streamlit Cloud for easy access from anywhere:
+
+#### Prerequisites
+- GitHub account
+- Streamlit Cloud account (free tier available at [share.streamlit.io](https://share.streamlit.io))
+
+#### Deployment Steps
+
+1. **Fork or clone this repository** to your GitHub account
+
+2. **Log in to Streamlit Cloud**
+   - Go to [share.streamlit.io](https://share.streamlit.io)
+   - Sign in with GitHub
+
+3. **Create new app**
+   - Click "New app"
+   - Select your repository: `Expense_Summary` (or your fork)
+   - Branch: `develop` (or `main`)
+   - Main file path: `web_app.py`
+   - App URL: Choose your custom subdomain (e.g., `your-app-name.streamlit.app`)
+
+4. **Configure deployment settings** (optional)
+   - Python version: 3.10+ (auto-detected from requirements.txt)
+   - The app will automatically use `.streamlit/config.toml` for settings
+
+5. **Deploy!**
+   - Click "Deploy"
+   - Wait 2-3 minutes for initial deployment
+   - Your app will be live at `https://your-app-name.streamlit.app`
+
+#### Required Files (Already Included)
+
+- ✅ `requirements.txt` - Python dependencies
+- ✅ `.streamlit/config.toml` - Streamlit configuration
+- ✅ `web_app.py` - Main application file
+- ✅ `data/reference/NameList.csv` - Attendee reference data
+- ✅ `data/reference/config.toml` - Processing configuration
+
+#### Post-Deployment Configuration
+
+**Upload your attendee list:**
+1. Open your deployed app
+2. Go to "⚙️ Settings" → "Manage Attendees" tab
+3. Upload your `NameList.csv` or add attendees manually
+
+**Important Notes:**
+- The free tier has some limitations:
+  - Apps sleep after inactivity (restarts on next visit)
+  - Limited resources (1 GB RAM)
+  - Public access (anyone with URL can access)
+- For private deployment, consider Streamlit Cloud's paid tiers or self-hosting
+- Uploaded files are stored temporarily and cleared on app restart
+
+#### Self-Hosting Alternative
+
+To self-host on your own server:
+
+```bash
+# Clone repository
+git clone https://github.com/davidklan-png/Expense_Summary.git
+cd Expense_Summary
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with network access
+streamlit run web_app.py --server.address 0.0.0.0 --server.port 8502
+```
+
+Then access via `http://your-server-ip:8502`
+
+#### Environment Variables (Optional)
+
+For advanced configuration, you can set environment variables in Streamlit Cloud:
+
+- Go to app settings → "Secrets"
+- Add configuration in TOML format (if needed for future features)
 
 ## License
 

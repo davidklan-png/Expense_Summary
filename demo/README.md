@@ -79,7 +79,7 @@ poetry run sf \
   --verbose
 
 # View the results
-open /tmp/saisonxform-demo/Output/202510_sample.html
+open /saisonxform-demo/Output/202510_sample.html
 ```
 
 **Note:** Data directories must be outside git repositories for security. This prevents accidental commits of sensitive financial data.

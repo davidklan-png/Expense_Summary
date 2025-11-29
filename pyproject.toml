@@ -34,10 +34,10 @@ sf = "saisonxform.cli:app"
 [tool.saisonxform]
 # Default configuration (can be overridden by config.toml or environment variables)
 # Config precedence: env vars > config.toml > pyproject.toml [tool.saisonxform]
-input_dir = "../Input"
-reference_dir = "../Reference"
-output_dir = "../Output"
-archive_dir = "../Archive"
+input_dir = "data/input"
+reference_dir = "data/reference"
+output_dir = "data/output"
+archive_dir = "data/archive"
 
 [build-system]
 requires = ["poetry-core"]

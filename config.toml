@@ -3,11 +3,11 @@
 
 [paths]
 # Directory paths (relative to project root or absolute)
-# Default: ../Input, ../Reference, ../Output, ../Archive
-input_dir = "../Input"
-reference_dir = "../Reference"
-output_dir = "../Output"
-archive_dir = "../Archive"
+# Best practice: Keep data directories within project for user access and persistence
+input_dir = "data/input"
+reference_dir = "data/reference"
+output_dir = "data/output"
+archive_dir = "data/archive"
 
 [processing]
 # Attendee count estimation range
@@ -32,16 +32,24 @@ max_attendees = 8
 # "1" = 0.7
 # "2" = 0.3
 
-# Amount-based attendee estimation (optional)
-# If this section is present, attendee counts are determined by transaction amount
+# Amount-based attendee estimation
+# Controls how attendee counts are determined: by transaction amount or random
+#
+# ENABLE/DISABLE: Set enabled = true to use amount-based logic, false for random
+# When enabled: attendee counts determined by transaction amount using brackets below
+# When disabled: random selection between min_attendees and max_attendees
+#
 # Each bracket defines an amount range and corresponding attendee count range
 # Format: "min_amount-max_amount" = { min = X, max = Y }
 # Amounts are in yen. Use 999999999 for "unlimited" upper bound.
 [processing.amount_based_attendees]
+enabled = true  # SET TO false TO DISABLE AMOUNT-BASED LOGIC
+
 # Fallback: if no bracket matches, calculate as amount / cost_per_person (minimum 2)
 cost_per_person = 3000  # ¥3,000 per person average
 
 # Amount brackets (randomly select between min and max attendees)
+# You can adjust these ranges and attendee counts as needed
 [processing.amount_based_attendees.brackets]
 "0-5000" = { min = 2, max = 3 }        # Small transactions: 2-3 people
 "5001-15000" = { min = 3, max = 5 }    # Medium transactions: 3-5 people
