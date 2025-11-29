@@ -640,6 +640,88 @@ mkdir -p Input Reference Output
 
 See [CONTRIBUTING.md](docs/development/CONTRIBUTING.md) for details.
 
+## Deployment
+
+### Streamlit Cloud Deployment
+
+Deploy the web interface to Streamlit Cloud for easy access from anywhere:
+
+#### Prerequisites
+- GitHub account
+- Streamlit Cloud account (free tier available at [share.streamlit.io](https://share.streamlit.io))
+
+#### Deployment Steps
+
+1. **Fork or clone this repository** to your GitHub account
+
+2. **Log in to Streamlit Cloud**
+   - Go to [share.streamlit.io](https://share.streamlit.io)
+   - Sign in with GitHub
+
+3. **Create new app**
+   - Click "New app"
+   - Select your repository: `Expense_Summary` (or your fork)
+   - Branch: `develop` (or `main`)
+   - Main file path: `web_app.py`
+   - App URL: Choose your custom subdomain (e.g., `your-app-name.streamlit.app`)
+
+4. **Configure deployment settings** (optional)
+   - Python version: 3.10+ (auto-detected from requirements.txt)
+   - The app will automatically use `.streamlit/config.toml` for settings
+
+5. **Deploy!**
+   - Click "Deploy"
+   - Wait 2-3 minutes for initial deployment
+   - Your app will be live at `https://your-app-name.streamlit.app`
+
+#### Required Files (Already Included)
+
+- ✅ `requirements.txt` - Python dependencies
+- ✅ `.streamlit/config.toml` - Streamlit configuration
+- ✅ `web_app.py` - Main application file
+- ✅ `data/reference/NameList.csv` - Attendee reference data
+- ✅ `data/reference/config.toml` - Processing configuration
+
+#### Post-Deployment Configuration
+
+**Upload your attendee list:**
+1. Open your deployed app
+2. Go to "⚙️ Settings" → "Manage Attendees" tab
+3. Upload your `NameList.csv` or add attendees manually
+
+**Important Notes:**
+- The free tier has some limitations:
+  - Apps sleep after inactivity (restarts on next visit)
+  - Limited resources (1 GB RAM)
+  - Public access (anyone with URL can access)
+- For private deployment, consider Streamlit Cloud's paid tiers or self-hosting
+- Uploaded files are stored temporarily and cleared on app restart
+
+#### Self-Hosting Alternative
+
+To self-host on your own server:
+
+```bash
+# Clone repository
+git clone https://github.com/davidklan-png/Expense_Summary.git
+cd Expense_Summary
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with network access
+streamlit run web_app.py --server.address 0.0.0.0 --server.port 8502
+```
+
+Then access via `http://your-server-ip:8502`
+
+#### Environment Variables (Optional)
+
+For advanced configuration, you can set environment variables in Streamlit Cloud:
+
+- Go to app settings → "Secrets"
+- Add configuration in TOML format (if needed for future features)
+
 ## License
 
 [Specify your license]

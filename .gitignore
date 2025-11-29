@@ -103,6 +103,9 @@ openspec/changes/archive/
 # Serena MCP workspace data
 .serena/
 
+# Streamlit secrets
+.streamlit/secrets.toml
+
 # Temporary files
 *.tmp
 *.bak
