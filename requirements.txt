@@ -6,6 +6,7 @@ chardet>=5.0.0
 jinja2>=3.1.0
 typer==0.9.0
 click==8.1.3
+openpyxl>=3.0.0
 
 # Python 3.10 compatibility
 tomli>=2.0.1; python_version < "3.11"

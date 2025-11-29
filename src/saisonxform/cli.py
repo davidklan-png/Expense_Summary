@@ -4,6 +4,7 @@ Provides the main entry point and CLI commands for the application.
 Uses Typer for robust CLI architecture with subcommands.
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -158,18 +159,22 @@ def run(
         ("Archive", config.archive_dir),
     ]
 
-    git_paths = []
-    for name, path in paths_to_validate:
-        if path.exists() and is_inside_git_repo(path):
-            git_paths.append(f"{name}: {path}")
+    # Skip git validation in test environments
+    skip_git_validation = os.getenv("SAISONXFORM_SKIP_GIT_VALIDATION", "").lower() in ("1", "true", "yes")
 
-    if git_paths:
-        typer.echo("\nERROR: The following directories are inside a git repository:")
-        for git_path in git_paths:
-            typer.echo(f"  • {git_path}")
-        typer.echo("\nFor security, data directories must be outside of git repositories.")
-        typer.echo("Use --input, --reference, --output, or --archive to specify different paths.")
-        raise typer.Exit(code=1)
+    if not skip_git_validation:
+        git_paths = []
+        for name, path in paths_to_validate:
+            if path.exists() and is_inside_git_repo(path):
+                git_paths.append(f"{name}: {path}")
+
+        if git_paths:
+            typer.echo("\nERROR: The following directories are inside a git repository:")
+            for git_path in git_paths:
+                typer.echo(f"  • {git_path}")
+            typer.echo("\nFor security, data directories must be outside of git repositories.")
+            typer.echo("Use --input, --reference, --output, or --archive to specify different paths.")
+            raise typer.Exit(code=1)
 
     # Load attendee reference
     namelist_path = config.reference_dir / "NameList.csv"

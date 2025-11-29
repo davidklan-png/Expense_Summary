@@ -9,11 +9,11 @@ This example demonstrates all 7 empty state variants with the improved design:
 - Semantic icons and Japanese language support
 """
 
-import streamlit as st
-
 # Add the src directory to the path to import saisonxform modules
 import sys
 from pathlib import Path
+
+import streamlit as st
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
@@ -46,7 +46,8 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### Design Improvements Applied")
-    st.markdown("""
+    st.markdown(
+        """
     ✅ Button gap: 16px (8px grid)
     ✅ Disabled states
     ✅ Focus indicators
@@ -55,7 +56,8 @@ with st.sidebar:
     ✅ Responsive icons
     ✅ Animations
     ✅ WCAG AA contrast
-    """)
+    """,
+    )
 
 # Demo sections
 with st.container():
@@ -204,7 +206,8 @@ st.markdown("---")
 st.header("9. Code Examples")
 
 with st.expander("📝 Basic Usage"):
-    st.code("""
+    st.code(
+        """
 from saisonxform.ui.empty_states import EmptyState
 
 # Simple no-documents state with actions
@@ -221,10 +224,13 @@ EmptyState.error(
 
 # Loading state
 EmptyState.loading(message="処理中...")
-""", language="python")
+""",
+        language="python",
+    )
 
 with st.expander("🎨 Advanced Usage"):
-    st.code("""
+    st.code(
+        """
 # Custom empty state with all options
 EmptyState.render(
     variant="no-documents",
@@ -249,10 +255,13 @@ EmptyState.render(
 # - "sm" (32px padding)
 # - "md" (48px padding - 1.5x)
 # - "lg" (64px padding - 2x)
-""", language="python")
+""",
+        language="python",
+    )
 
 with st.expander("🔧 Integration Example"):
-    st.code("""
+    st.code(
+        """
 import streamlit as st
 from saisonxform.ui.empty_states import EmptyState
 
@@ -284,11 +293,14 @@ def process_document():
             on_retry=process_document,
             error_message=str(e),
         )
-""", language="python")
+""",
+        language="python",
+    )
 
 # Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(
+    """
 ### 📊 Design System Score
 
 **Before**: 8.5/10
@@ -303,4 +315,5 @@ st.markdown("""
 - Responsive icon sizing with mobile optimization
 - CSS animations with reduced-motion support
 - Semantic Japanese language labels
-""")
+""",
+)

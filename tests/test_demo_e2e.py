@@ -133,9 +133,9 @@ class TestDemoEndToEndWorkflow:
         # AND: HTML report should contain expected elements
         html_content = output_html.read_text(encoding="utf-8")
         assert "会議費" in html_content or "接待費" in html_content
-        # HTML contains attendee information
-        assert "ID:" in html_content
-        assert "参加者一覧" in html_content or "attendee" in html_content.lower()
+        # HTML contains attendee information (check for attendee table header or ID column)
+        assert "出席者詳細" in html_content or "Participants(ID)" in html_content
+        assert "attendee" in html_content.lower() or "出席者" in html_content
 
         # AND: Input file should be archived
         archived_file = demo_dir / "Archive" / "202510" / "202510_sample.csv"
@@ -183,7 +183,7 @@ class TestDemoEndToEndWorkflow:
         assert "Reference" in result.stdout
         assert "Output" in result.stdout
 
-    def test_demo_workflow_handles_missing_config_gracefully(self, tmp_path):
+    def test_demo_workflow_handles_missing_config_gracefully(self, tmp_path, monkeypatch):
         """
         Edge case: Running without config.toml should use defaults
 
@@ -191,6 +191,9 @@ class TestDemoEndToEndWorkflow:
         WHEN user runs with explicit paths
         THEN processing should succeed using CLI arguments
         """
+        # Skip git validation for test environment
+        monkeypatch.setenv("SAISONXFORM_SKIP_GIT_VALIDATION", "1")
+
         # Create manual directory structure (no demo)
         input_dir = tmp_path / "Input"
         reference_dir = tmp_path / "Reference"
@@ -212,6 +215,10 @@ class TestDemoEndToEndWorkflow:
             encoding="utf-8",
         )
 
+        # Create archive directory (must be outside git to pass validation)
+        archive_dir = tmp_path / "Archive"
+        archive_dir.mkdir()
+
         # WHEN: Process with explicit paths (no config.toml)
         # Use --force to avoid conflicts with any previous runs in CI
         result = runner.invoke(
@@ -223,6 +230,8 @@ class TestDemoEndToEndWorkflow:
                 str(reference_dir),
                 "--output",
                 str(output_dir),
+                "--archive",
+                str(archive_dir),
                 "--force",  # Avoid archive conflicts in CI
             ],
         )

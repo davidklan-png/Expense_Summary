@@ -18,9 +18,9 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from saisonxform.config import Config
-from saisonxform.io import read_csv_with_detection, write_csv_utf8_bom
-from saisonxform.selectors import estimate_attendee_count, sample_attendee_ids
+from saisonxform.io import read_csv_with_detection
 from saisonxform.reporting import generate_html_report, get_unique_attendees
+from saisonxform.selectors import estimate_attendee_count, sample_attendee_ids
 
 # Page configuration
 st.set_page_config(
@@ -160,6 +160,7 @@ def save_attendee_reference(df: pd.DataFrame, reference_path: Path) -> bool:
         if reference_path.exists():
             backup_path = reference_path.parent / f"{reference_path.stem}_backup.csv"
             import shutil
+
             shutil.copy2(reference_path, backup_path)
         df.to_csv(reference_path, index=False, encoding="utf-8")
         return True
@@ -195,13 +196,15 @@ def recalculate_attendee_count(row: pd.Series) -> int:
     return count
 
 
-
-
 def process_uploaded_file(
-    uploaded_file, min_attendees: int = 2, max_attendees: int = 8,
-    id_2_weight: float = 0.9, id_1_weight: float = 0.1,
-    use_amount_based: bool = False, amount_brackets: Optional[dict] = None,
-    cost_per_person: int = 3000
+    uploaded_file,
+    min_attendees: int = 2,
+    max_attendees: int = 8,
+    id_2_weight: float = 0.9,
+    id_1_weight: float = 0.1,
+    use_amount_based: bool = False,
+    amount_brackets: Optional[dict] = None,
+    cost_per_person: int = 3000,
 ) -> tuple[pd.DataFrame, str, list]:
     """Process an uploaded CSV file with optional amount-based attendee estimation."""
     temp_path = Path(f"/tmp/{uploaded_file.name}")
@@ -248,13 +251,16 @@ def process_uploaded_file(
                 min_attendees=min_attendees,
                 max_attendees=max_attendees,
                 amount_brackets=brackets_to_use,
-                cost_per_person=cost_per_person
+                cost_per_person=cost_per_person,
             )
             df.loc[idx, "人数"] = count
 
             ids_result = sample_attendee_ids(
-                count=count, available_ids=available_ids,
-                id_2_weight=id_2_weight, id_1_weight=id_1_weight, return_dict=True
+                count=count,
+                available_ids=available_ids,
+                id_2_weight=id_2_weight,
+                id_1_weight=id_1_weight,
+                return_dict=True,
             )
             assert isinstance(ids_result, dict)
             for i in range(1, 9):
@@ -318,7 +324,9 @@ def render_preview_editor(filename: str):
     id_cols = [f"ID{i}" for i in range(1, 9)]
 
     st.subheader("🔧 Edit Attendee IDs")
-    st.info("💡 Click on ID cells to select attendees. Use the reference table below to find names. 人数 will auto-update based on filled IDs.")
+    st.info(
+        "💡 Click on ID cells to select attendees. Use the reference table below to find names. 人数 will auto-update based on filled IDs.",
+    )
 
     # Show ID reference table in an expander
     with st.expander("📋 Attendee ID Reference"):
@@ -336,9 +344,9 @@ def render_preview_editor(filename: str):
         # Create help text with name mapping
         id_column_config[col_name] = st.column_config.SelectboxColumn(
             col_name,
-            help=f"Select attendee ID (see reference table above for names)",
+            help="Select attendee ID (see reference table above for names)",
             options=available_ids,
-            required=False
+            required=False,
         )
 
     # Create editable dataframe
@@ -355,7 +363,7 @@ def render_preview_editor(filename: str):
             **id_column_config,
             "備考": st.column_config.TextColumn("備考", width="medium", required=False),
         },
-        key=f"preview_editor_{filename}"
+        key=f"preview_editor_{filename}",
     )
 
     # Auto-recalculate 人数 when IDs change
@@ -380,11 +388,7 @@ def render_preview_editor(filename: str):
     with col1:
         if st.button("✅ Confirm & Save", type="primary", key=f"confirm_{filename}", width="stretch"):
             # Move to processed data
-            st.session_state.processed_data[filename] = {
-                "data": df,
-                "encoding": encoding,
-                "pre_header": pre_header
-            }
+            st.session_state.processed_data[filename] = {"data": df, "encoding": encoding, "pre_header": pre_header}
             # Clear preview
             del st.session_state.preview_data[filename]
             st.session_state.current_preview_file = None
@@ -441,18 +445,15 @@ def render_attendee_management():
     with col1:
         search_term = st.text_input("Search by Name, Company, or Title", "")
     with col2:
-        company_filter = st.selectbox(
-            "Filter by Company",
-            ["All"] + sorted(df["Company"].unique().tolist())
-        )
+        company_filter = st.selectbox("Filter by Company", ["All"] + sorted(df["Company"].unique().tolist()))
 
     # Apply filters
     filtered_df = df.copy()
     if search_term:
         mask = (
-            filtered_df["Name"].str.contains(search_term, case=False, na=False) |
-            filtered_df["Company"].str.contains(search_term, case=False, na=False) |
-            filtered_df["Title"].str.contains(search_term, case=False, na=False)
+            filtered_df["Name"].str.contains(search_term, case=False, na=False)
+            | filtered_df["Company"].str.contains(search_term, case=False, na=False)
+            | filtered_df["Title"].str.contains(search_term, case=False, na=False)
         )
         filtered_df = filtered_df[mask]
 
@@ -478,7 +479,7 @@ def render_attendee_management():
                 "Title": st.column_config.TextColumn("Title", required=True),
                 "Name": st.column_config.TextColumn("Name", required=True),
             },
-            key="attendee_editor"
+            key="attendee_editor",
         )
 
         col1, col2 = st.columns([1, 3])
@@ -487,9 +488,11 @@ def render_attendee_management():
                 if not search_term and company_filter == "All":
                     st.session_state.attendee_ref = edited_df
                 else:
-                    for idx, row in edited_df.iterrows():
+                    for _idx, row in edited_df.iterrows():
                         df.loc[df["ID"] == row["ID"], ["Company", "Title", "Name"]] = [
-                            row["Company"], row["Title"], row["Name"]
+                            row["Company"],
+                            row["Title"],
+                            row["Name"],
                         ]
                     st.session_state.attendee_ref = df
 
@@ -523,12 +526,9 @@ def render_attendee_management():
                 if not new_name or not new_company or not new_title:
                     st.error("❌ Please fill in all required fields (Name, Company, Title)")
                 else:
-                    new_row = pd.DataFrame({
-                        "ID": [new_id],
-                        "Company": [new_company],
-                        "Title": [new_title],
-                        "Name": [new_name]
-                    })
+                    new_row = pd.DataFrame(
+                        {"ID": [new_id], "Company": [new_company], "Title": [new_title], "Name": [new_name]},
+                    )
 
                     updated_df = pd.concat([df, new_row], ignore_index=True)
                     st.session_state.attendee_ref = updated_df
@@ -544,10 +544,7 @@ def render_attendee_management():
         st.subheader("Delete Attendees")
         st.warning("⚠️ Deleted attendees will be permanently removed from NameList.csv")
 
-        delete_options = [
-            f"ID {row['ID']}: {row['Name']} ({row['Company']})"
-            for _, row in filtered_df.iterrows()
-        ]
+        delete_options = [f"ID {row['ID']}: {row['Name']} ({row['Company']})" for _, row in filtered_df.iterrows()]
 
         selected_to_delete = st.multiselect("Select attendees to delete", delete_options)
 
@@ -587,13 +584,13 @@ def render_attendee_management():
                 data=csv_data,
                 file_name="attendees.csv",
                 mime="text/csv",
-                width="stretch"
+                width="stretch",
             )
 
         with col2:
             excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                filtered_df.to_excel(writer, index=False, sheet_name='Attendees')
+            with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+                filtered_df.to_excel(writer, index=False, sheet_name="Attendees")
             excel_data = excel_buffer.getvalue()
 
             st.download_button(
@@ -601,7 +598,7 @@ def render_attendee_management():
                 data=excel_data,
                 file_name="attendees.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                width="stretch"
+                width="stretch",
             )
 
         with col3:
@@ -612,7 +609,7 @@ def render_attendee_management():
                 data=json_data,
                 file_name="attendees.json",
                 mime="application/json",
-                width="stretch"
+                width="stretch",
             )
 
 
@@ -645,7 +642,7 @@ def main():
         network_info = get_network_info(port=8502)
         st.markdown("### 🌐 Network Access")
         st.markdown(f"**Local:** [{network_info['localhost_url']}]({network_info['localhost_url']})")
-        if network_info['network_url']:
+        if network_info["network_url"]:
             st.markdown(f"**Network:** `{network_info['network_url']}`")
             st.caption("📋 Copy the network URL above to access from other devices on your network")
         else:
@@ -665,7 +662,7 @@ def main():
             reference_dir = st.text_input(
                 "Reference Directory",
                 value=str(Path("data/reference")),
-                help="Directory containing NameList.csv"
+                help="Directory containing NameList.csv",
             )
 
             if st.button("🔄 Reload Attendee List"):
@@ -699,7 +696,7 @@ def main():
             use_amount_based = st.checkbox(
                 "Enable Amount-Based Attendee Estimation",
                 value=use_amount_based,
-                help="Use transaction amounts to determine attendee counts"
+                help="Use transaction amounts to determine attendee counts",
             )
 
             if use_amount_based:
@@ -715,15 +712,17 @@ def main():
 
             min_attendees = st.slider(
                 "Min Attendees",
-                1, 10,
+                1,
+                10,
                 config.min_attendees if config else 2,
-                help="Minimum attendees (used when amount-based is disabled)"
+                help="Minimum attendees (used when amount-based is disabled)",
             )
             max_attendees = st.slider(
                 "Max Attendees",
-                1, 15,
+                1,
+                15,
                 config.max_attendees if config else 8,
-                help="Maximum attendees (also caps amount-based fallback)"
+                help="Maximum attendees (also caps amount-based fallback)",
             )
 
             st.divider()
@@ -735,17 +734,19 @@ def main():
 
             id_2_weight = st.slider(
                 "ID '2' Weight",
-                0.0, 1.0,
+                0.0,
+                1.0,
                 float(default_weights.get("2", 0.9)),
                 0.05,
-                help="Probability of selecting ID '2' as primary attendee"
+                help="Probability of selecting ID '2' as primary attendee",
             )
             id_1_weight = st.slider(
                 "ID '1' Weight",
-                0.0, 1.0,
+                0.0,
+                1.0,
                 float(default_weights.get("1", 0.1)),
                 0.05,
-                help="Probability of selecting ID '1' as primary attendee"
+                help="Probability of selecting ID '1' as primary attendee",
             )
 
             if abs((id_2_weight + id_1_weight) - 1.0) > 0.01:
@@ -754,7 +755,9 @@ def main():
             st.caption("💡 Edit `data/reference/config.toml` to change default settings")
 
     # Main content area - workflow-focused tab order
-    tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload & Process", "✏️ Preview & Edit", "💾 Download Results", "👥 Manage Attendees"])
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["📤 Upload & Process", "✏️ Preview & Edit", "💾 Download Results", "👥 Manage Attendees"],
+    )
 
     with tab1:
         st.header("📤 Upload & Process Files")
@@ -770,7 +773,7 @@ def main():
             type=["csv"],
             accept_multiple_files=True,
             help="Upload one or more Saison transaction CSV files for processing",
-            key="file_uploader"
+            key="file_uploader",
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -782,11 +785,8 @@ def main():
                 if uploaded_file.name not in st.session_state.uploaded_files_cache:
                     st.session_state.uploaded_files_cache[uploaded_file.name] = uploaded_file.getvalue()
 
-        # Show count of files ready to process
-        files_to_process = []
-        if uploaded_files:
-            files_to_process = uploaded_files
-        elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
+        # Show cached files info if uploader was cleared
+        if not uploaded_files and "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
             # If uploader was cleared but we have cached files, show them
             st.info(f"📁 {len(st.session_state.uploaded_files_cache)} file(s) cached and ready to process")
 
@@ -804,8 +804,14 @@ def main():
                             status_text.text(f"Processing {uploaded_file.name}...")
 
                             df, encoding, pre_header = process_uploaded_file(
-                                uploaded_file, min_attendees, max_attendees, id_2_weight, id_1_weight,
-                                use_amount_based, amount_brackets, cost_per_person
+                                uploaded_file,
+                                min_attendees,
+                                max_attendees,
+                                id_2_weight,
+                                id_1_weight,
+                                use_amount_based,
+                                amount_brackets,
+                                cost_per_person,
                             )
 
                             # Store in preview data instead of processed
@@ -890,7 +896,7 @@ def main():
             with col2:
                 # Create zip file with all CSVs and HTML reports
                 zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                     for filename, data_dict in st.session_state.processed_data.items():
                         df = data_dict["data"]
                         pre_header = data_dict["pre_header"]
@@ -902,7 +908,7 @@ def main():
                                 csv_buffer.write(",".join(str(val) for val in row) + "\n")
                         df.to_csv(csv_buffer, index=False, encoding="utf-8-sig")
                         csv_data = csv_buffer.getvalue()
-                        zip_file.writestr(filename, csv_data.encode('utf-8-sig'))
+                        zip_file.writestr(filename, csv_data.encode("utf-8-sig"))
 
                         # Add HTML report (if attendee reference is available)
                         if st.session_state.attendee_ref is not None:
@@ -932,7 +938,7 @@ def main():
                     help="Download all processed files (CSV and HTML) as a ZIP archive and reset the session",
                     type="primary",
                     width="stretch",
-                    on_click=lambda: reset_session()
+                    on_click=lambda: reset_session(),
                 )
 
             st.markdown("---")
@@ -975,7 +981,7 @@ def main():
                                 handle_duplicates=False,
                             )
 
-                            with open(html_output, "r", encoding="utf-8") as f:
+                            with open(html_output, encoding="utf-8") as f:
                                 html_data = f.read()
 
                             st.download_button(
