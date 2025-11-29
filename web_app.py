@@ -299,7 +299,7 @@ def render_preview_editor(filename: str):
     # Create editable dataframe
     edited_df = st.data_editor(
         display_df[display_cols],
-        use_container_width=True,
+        width="stretch",
         num_rows="fixed",
         hide_index=False,
         column_config={
@@ -336,7 +336,7 @@ def render_preview_editor(filename: str):
     # Action buttons
     col1, col2, col3 = st.columns([1, 1, 2])
     with col1:
-        if st.button("✅ Confirm & Save", type="primary", key=f"confirm_{filename}", use_container_width=True):
+        if st.button("✅ Confirm & Save", type="primary", key=f"confirm_{filename}", width="stretch"):
             # Move to processed data
             st.session_state.processed_data[filename] = {
                 "data": df,
@@ -350,7 +350,7 @@ def render_preview_editor(filename: str):
             st.rerun()
 
     with col2:
-        if st.button("⬅️ Back to File List", key=f"back2_{filename}", use_container_width=True):
+        if st.button("⬅️ Back to File List", key=f"back2_{filename}", width="stretch"):
             del st.session_state.preview_data[filename]
             st.session_state.current_preview_file = None
             st.rerun()
@@ -359,7 +359,7 @@ def render_preview_editor(filename: str):
     st.subheader("👥 Attendee Summary")
     unique_attendees_df = get_unique_attendees(df, attendee_ref)
     if not unique_attendees_df.empty:
-        st.dataframe(unique_attendees_df, use_container_width=True, hide_index=True)
+        st.dataframe(unique_attendees_df, width="stretch", hide_index=True)
     else:
         st.info("No attendees assigned yet")
 
@@ -427,7 +427,7 @@ def render_attendee_management():
 
         edited_df = st.data_editor(
             filtered_df,
-            use_container_width=True,
+            width="stretch",
             num_rows="fixed",
             hide_index=False,
             column_config={
@@ -441,7 +441,7 @@ def render_attendee_management():
 
         col1, col2 = st.columns([1, 3])
         with col1:
-            if st.button("💾 Save Changes", type="primary", use_container_width=True):
+            if st.button("💾 Save Changes", type="primary", width="stretch"):
                 if not search_term and company_filter == "All":
                     st.session_state.attendee_ref = edited_df
                 else:
@@ -475,7 +475,7 @@ def render_attendee_management():
                 new_company = st.text_input("Company *", placeholder="e.g., ABC株式会社")
                 new_title = st.text_input("Title *", placeholder="e.g., 部長")
 
-            submitted = st.form_submit_button("➕ Add Attendee", type="primary", use_container_width=True)
+            submitted = st.form_submit_button("➕ Add Attendee", type="primary", width="stretch")
 
             if submitted:
                 if not new_name or not new_company or not new_title:
@@ -514,7 +514,7 @@ def render_attendee_management():
 
             col1, col2 = st.columns([1, 3])
             with col1:
-                if st.button("🗑️ Confirm Delete", type="secondary", use_container_width=True):
+                if st.button("🗑️ Confirm Delete", type="secondary", width="stretch"):
                     ids_to_delete = []
                     for item in selected_to_delete:
                         id_str = item.split(":")[0].replace("ID ", "")
@@ -545,7 +545,7 @@ def render_attendee_management():
                 data=csv_data,
                 file_name="attendees.csv",
                 mime="text/csv",
-                use_container_width=True
+                width="stretch"
             )
 
         with col2:
@@ -559,7 +559,7 @@ def render_attendee_management():
                 data=excel_data,
                 file_name="attendees.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                width="stretch"
             )
 
         with col3:
@@ -570,7 +570,7 @@ def render_attendee_management():
                 data=json_data,
                 file_name="attendees.json",
                 mime="application/json",
-                use_container_width=True
+                width="stretch"
             )
 
 
@@ -578,124 +578,145 @@ def main():
     """Main application entry point."""
     initialize_session_state()
 
-    # Header
-    st.markdown('<div class="main-header">💳 Saison Transform - Web Interface</div>', unsafe_allow_html=True)
-    st.markdown("Upload transaction CSV files, manage attendees, preview & edit, and download results.")
-
-    # Sidebar for configuration
-    with st.sidebar:
-        st.header("⚙️ Configuration")
-
-        st.subheader("Reference Data")
-        reference_dir = st.text_input(
-            "Reference Directory",
-            value="/home/teabagger/202511/Reference"
-        )
-
-        if st.button("📂 Load Attendee Reference"):
-            try:
-                ref_path = Path(reference_dir) / "NameList.csv"
+    # Auto-load attendee reference on first run
+    if st.session_state.attendee_ref is None:
+        try:
+            # Try data/reference/NameList.csv first (project structure)
+            ref_path = Path("data/reference/NameList.csv")
+            if ref_path.exists():
                 attendee_ref = load_attendee_reference(ref_path)
                 if attendee_ref is not None:
                     st.session_state.attendee_ref = attendee_ref
-                    st.success(f"✅ Loaded {len(attendee_ref)} attendees")
-                else:
-                    st.error("❌ NameList.csv not found")
-            except Exception as e:
-                st.error(f"❌ Error loading reference: {e}")
+                    st.session_state.attendee_ref_path = ref_path
+        except Exception:
+            pass  # Will be loaded manually if needed
 
+    # Header
+    st.markdown('<div class="main-header">💳 Saison Transform</div>', unsafe_allow_html=True)
+    st.markdown("**Quick Start:** Upload files → Preview & edit → Download results")
+
+    # Sidebar for configuration (collapsed by default)
+    with st.sidebar:
+        st.header("⚙️ Settings")
+
+        # Attendee list status (always visible)
         if st.session_state.attendee_ref is not None:
-            st.info(f"📋 {len(st.session_state.attendee_ref)} attendees loaded")
+            st.success(f"✅ {len(st.session_state.attendee_ref)} attendees loaded")
             if st.session_state.attendee_ref_path:
                 st.caption(f"📄 {st.session_state.attendee_ref_path.name}")
+        else:
+            st.warning("⚠️ No attendee list loaded")
 
-        st.subheader("Processing Parameters")
+        # Reference data settings (collapsible)
+        with st.expander("📂 Reference Data", expanded=False):
+            reference_dir = st.text_input(
+                "Reference Directory",
+                value=str(Path("data/reference")),
+                help="Directory containing NameList.csv"
+            )
 
-        # Load config values
-        config = st.session_state.config
-        use_amount_based = False
-        amount_brackets = None
-        cost_per_person = 3000
+            if st.button("🔄 Reload Attendee List"):
+                try:
+                    ref_path = Path(reference_dir) / "NameList.csv"
+                    attendee_ref = load_attendee_reference(ref_path)
+                    if attendee_ref is not None:
+                        st.session_state.attendee_ref = attendee_ref
+                        st.session_state.attendee_ref_path = ref_path
+                        st.success(f"✅ Loaded {len(attendee_ref)} attendees")
+                        st.rerun()
+                    else:
+                        st.error("❌ NameList.csv not found")
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
 
-        if config and config.amount_based_attendees:
-            use_amount_based = True
-            amount_brackets = config.amount_based_attendees.get("brackets")
-            cost_per_person = config.amount_based_attendees.get("cost_per_person", 3000)
+        # Processing parameters (collapsible)
+        with st.expander("🔧 Processing Parameters", expanded=False):
+            # Load config values
+            config = st.session_state.config
+            use_amount_based = False
+            amount_brackets = None
+            cost_per_person = 3000
 
-        # Amount-based toggle
-        use_amount_based = st.checkbox(
-            "Enable Amount-Based Attendee Estimation",
-            value=use_amount_based,
-            help="Use transaction amounts to determine attendee counts"
-        )
+            if config and config.amount_based_attendees:
+                use_amount_based = True
+                amount_brackets = config.amount_based_attendees.get("brackets")
+                cost_per_person = config.amount_based_attendees.get("cost_per_person", 3000)
 
-        if use_amount_based:
-            st.info("📊 Using amount-based brackets from config")
-            if amount_brackets:
-                st.caption(f"💰 Cost per person: ¥{cost_per_person:,}")
-                with st.expander("View Amount Brackets"):
+            # Amount-based toggle
+            use_amount_based = st.checkbox(
+                "Enable Amount-Based Attendee Estimation",
+                value=use_amount_based,
+                help="Use transaction amounts to determine attendee counts"
+            )
+
+            if use_amount_based:
+                st.info("📊 Using amount-based brackets from config")
+                if amount_brackets:
+                    st.caption(f"💰 Cost per person: ¥{cost_per_person:,}")
                     for (min_amt, max_amt), attendee_range in amount_brackets.items():
                         st.text(f"¥{min_amt:,}-{max_amt:,}: {attendee_range['min']}-{attendee_range['max']} people")
+                else:
+                    st.warning("⚠️ Amount brackets not configured in config.toml")
             else:
-                st.warning("⚠️ Amount brackets not configured in config.toml")
-        else:
-            st.info("🎲 Using random attendee selection")
+                st.info("🎲 Using random attendee selection")
 
-        min_attendees = st.slider(
-            "Min Attendees",
-            1, 10,
-            config.min_attendees if config else 2,
-            help="Minimum attendees (used when amount-based is disabled)"
-        )
-        max_attendees = st.slider(
-            "Max Attendees",
-            1, 15,
-            config.max_attendees if config else 8,
-            help="Maximum attendees (also caps amount-based fallback)"
-        )
+            min_attendees = st.slider(
+                "Min Attendees",
+                1, 10,
+                config.min_attendees if config else 2,
+                help="Minimum attendees (used when amount-based is disabled)"
+            )
+            max_attendees = st.slider(
+                "Max Attendees",
+                1, 15,
+                config.max_attendees if config else 8,
+                help="Maximum attendees (also caps amount-based fallback)"
+            )
 
-        st.subheader("ID Selection Weights")
+            st.divider()
 
-        # Get weights from config
-        default_weights = {"2": 0.9, "1": 0.1}
-        if config and config.primary_id_weights:
-            default_weights = config.primary_id_weights
+            # Get weights from config
+            default_weights = {"2": 0.9, "1": 0.1}
+            if config and config.primary_id_weights:
+                default_weights = config.primary_id_weights
 
-        id_2_weight = st.slider(
-            "ID '2' Weight",
-            0.0, 1.0,
-            float(default_weights.get("2", 0.9)),
-            0.05
-        )
-        id_1_weight = st.slider(
-            "ID '1' Weight",
-            0.0, 1.0,
-            float(default_weights.get("1", 0.1)),
-            0.05
-        )
+            id_2_weight = st.slider(
+                "ID '2' Weight",
+                0.0, 1.0,
+                float(default_weights.get("2", 0.9)),
+                0.05,
+                help="Probability of selecting ID '2' as primary attendee"
+            )
+            id_1_weight = st.slider(
+                "ID '1' Weight",
+                0.0, 1.0,
+                float(default_weights.get("1", 0.1)),
+                0.05,
+                help="Probability of selecting ID '1' as primary attendee"
+            )
 
-        if abs((id_2_weight + id_1_weight) - 1.0) > 0.01:
-            st.warning("⚠️ Weights should sum to 1.0")
+            if abs((id_2_weight + id_1_weight) - 1.0) > 0.01:
+                st.warning("⚠️ Weights should sum to 1.0")
 
-        # Config file location info
-        st.divider()
-        st.caption("⚙️ Edit `data/reference/config.toml` to adjust brackets and settings")
+            st.caption("💡 Edit `data/reference/config.toml` to change default settings")
 
-    # Main content area
-    tab1, tab2, tab3, tab4 = st.tabs(["👥 Manage Attendees", "📤 Upload & Process", "✏️ Edit Data", "💾 Download Results"])
+    # Main content area - workflow-focused tab order
+    tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload & Process", "✏️ Preview & Edit", "💾 Download Results", "👥 Manage Attendees"])
 
     with tab1:
-        render_attendee_management()
+        st.header("📤 Upload & Process Files")
 
-    with tab2:
-        st.header("Upload Transaction Files")
+        # Check if attendee list is loaded
+        if st.session_state.attendee_ref is None:
+            st.error("⚠️ **Attendee list not loaded!** Please load NameList.csv from the sidebar Settings.")
+            return
 
         st.markdown('<div class="file-upload-section">', unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
-            "Drag and drop CSV files here",
+            "📁 Drag and drop transaction CSV files here",
             type=["csv"],
             accept_multiple_files=True,
-            help="Upload one or more transaction CSV files for processing",
+            help="Upload one or more Saison transaction CSV files for processing",
             key="file_uploader"
         )
         st.markdown("</div>", unsafe_allow_html=True)
@@ -717,12 +738,11 @@ def main():
             st.info(f"📁 {len(st.session_state.uploaded_files_cache)} file(s) cached and ready to process")
 
         if uploaded_files:
-            st.subheader(f"📁 {len(uploaded_files)} file(s) uploaded")
+            st.success(f"✅ {len(uploaded_files)} file(s) uploaded and ready")
 
-            if st.button("🚀 Process All Files", type="primary"):
-                if st.session_state.attendee_ref is None:
-                    st.error("❌ Please load attendee reference first (see sidebar)")
-                else:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🚀 Process All Files", type="primary", width="stretch"):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
 
@@ -792,68 +812,28 @@ def main():
                     col3.metric("Relevant", relevant_count)
                     col4.metric("Encoding", encoding)
 
-    with tab3:
-        st.header("Edit Processed Data")
+    with tab2:
+        st.header("Preview & Edit Data")
 
-        if not st.session_state.processed_data:
-            st.info("📝 No confirmed data available. Process files and confirm them first.")
+        if not st.session_state.preview_data:
+            st.info("📝 No files processed yet. Upload files in the previous tab.")
         else:
-            selected_file = st.selectbox("Select file to edit:", list(st.session_state.processed_data.keys()))
+            # Show file selector
+            if not st.session_state.current_preview_file:
+                st.subheader("Select a file to preview:")
+                for filename in st.session_state.preview_data.keys():
+                    if st.button(f"📄 {filename}", key=f"select_{filename}", width="stretch"):
+                        st.session_state.current_preview_file = filename
+                        st.rerun()
+            else:
+                # Show preview editor
+                render_preview_editor(st.session_state.current_preview_file)
 
-            if selected_file:
-                data_dict = st.session_state.processed_data[selected_file]
-                df = data_dict["data"].copy()
-
-                st.subheader(f"Editing: {selected_file}")
-
-                col1, col2 = st.columns(2)
-                with col1:
-                    show_relevant_only = st.checkbox("Show only relevant transactions (会議費/接待費)", value=False)
-                with col2:
-                    show_columns = st.multiselect(
-                        "Select columns to display",
-                        options=df.columns.tolist(),
-                        default=df.columns.tolist()[:10] if len(df.columns) > 10 else df.columns.tolist(),
-                    )
-
-                if show_relevant_only:
-                    display_df = df[df["人数"] != ""].copy()
-                else:
-                    display_df = df.copy()
-
-                if show_columns:
-                    display_df = display_df[show_columns]
-
-                st.info("💡 Edit cells directly in the table below. Changes are saved automatically.")
-                edited_df = st.data_editor(
-                    display_df,
-                    use_container_width=True,
-                    num_rows="dynamic",
-                    hide_index=False,
-                    key=f"editor_{selected_file}",
-                )
-
-                if st.button("💾 Save Edits", key=f"save_{selected_file}"):
-                    st.session_state.edited_data[selected_file] = edited_df
-                    st.session_state.processed_data[selected_file]["data"] = edited_df
-                    st.success(f"✅ Saved edits for {selected_file}")
-
-                st.subheader("📈 Statistics")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Total Rows", len(display_df))
-                with col2:
-                    relevant = (df["人数"] != "").sum() if "人数" in df.columns else 0
-                    st.metric("Relevant Transactions", relevant)
-                with col3:
-                    total_amount = df["利用金額"].sum() if "利用金額" in df.columns else 0
-                    st.metric("Total Amount", f"¥{total_amount:,.0f}")
-
-    with tab4:
-        st.header("Download Processed Files")
+    with tab3:
+        st.header("Download Results")
 
         if not st.session_state.processed_data:
-            st.info("💾 No processed data available. Upload and confirm files first.")
+            st.info("💾 No confirmed files available. Go back to Preview & Edit tab to confirm files.")
         else:
             # Download All & Reset button
             st.markdown("### 📦 Batch Download")
@@ -888,7 +868,7 @@ def main():
                     mime="application/zip",
                     help="Download all processed files as a ZIP archive and reset the session",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     on_click=lambda: reset_session()
                 )
 
@@ -949,6 +929,9 @@ def main():
                             st.error(f"Error generating HTML: {e}")
 
                 st.markdown("---")
+
+    with tab4:
+        render_attendee_management()
 
 
 if __name__ == "__main__":

@@ -178,18 +178,18 @@
             <thead>
                 <tr>
                     <th class="id-col">ID</th>
-                    <th>Name</th>
-                    <th>Title</th>
                     <th>Company</th>
+                    <th>Title</th>
+                    <th>Name</th>
                 </tr>
             </thead>
             <tbody>
                 {% for attendee in unique_attendees %}
                 <tr>
                     <td class="id-col">{{ attendee['ID'] }}</td>
-                    <td>{{ attendee['Name'] }}</td>
-                    <td>{{ attendee['Title'] }}</td>
                     <td>{{ attendee['Company'] }}</td>
+                    <td>{{ attendee['Title'] }}</td>
+                    <td>{{ attendee['Name'] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
