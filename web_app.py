@@ -5,6 +5,7 @@ financial transaction CSV files with attendee management and preview.
 """
 
 import io
+import socket
 import sys
 import zipfile
 from pathlib import Path
@@ -77,6 +78,33 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+def get_network_info(port: int = 8501) -> dict[str, str]:
+    """Get network information for accessing the app from other devices.
+
+    Args:
+        port: Port number the app is running on (default: 8501)
+
+    Returns:
+        Dictionary with localhost, local_ip, and urls
+    """
+    try:
+        # Get local IP address
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = "Unable to detect"
+
+    return {
+        "localhost": "localhost",
+        "local_ip": local_ip,
+        "port": str(port),
+        "localhost_url": f"http://localhost:{port}",
+        "network_url": f"http://{local_ip}:{port}" if local_ip != "Unable to detect" else None,
+    }
 
 
 def initialize_session_state():
@@ -612,6 +640,17 @@ def main():
     # Sidebar for configuration (collapsed by default)
     with st.sidebar:
         st.header("⚙️ Settings")
+
+        # Network information (always visible)
+        network_info = get_network_info()
+        st.markdown("### 🌐 Network Access")
+        st.markdown(f"**Local:** [{network_info['localhost_url']}]({network_info['localhost_url']})")
+        if network_info['network_url']:
+            st.markdown(f"**Network:** `{network_info['network_url']}`")
+            st.caption("📋 Copy the network URL above to access from other devices on your network")
+        else:
+            st.caption("⚠️ Unable to detect network IP address")
+        st.divider()
 
         # Attendee list status (always visible)
         if st.session_state.attendee_ref is not None:
