@@ -642,7 +642,7 @@ def main():
         st.header("⚙️ Settings")
 
         # Network information (always visible)
-        network_info = get_network_info()
+        network_info = get_network_info(port=8502)
         st.markdown("### 🌐 Network Access")
         st.markdown(f"**Local:** [{network_info['localhost_url']}]({network_info['localhost_url']})")
         if network_info['network_url']:
