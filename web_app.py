@@ -641,9 +641,12 @@ def main():
         # Network information (always visible)
         network_info = get_network_info(port=8502)
         st.markdown("### 🌐 Network Access")
-        st.markdown(f"**Local:** [{network_info['localhost_url']}]({network_info['localhost_url']})")
+        # Use st.code instead of markdown links to avoid Safari regex issues
+        st.text("**Local:**")
+        st.code(network_info["localhost_url"], language="")
         if network_info["network_url"]:
-            st.markdown(f"**Network:** `{network_info['network_url']}`")
+            st.text("**Network:**")
+            st.code(network_info["network_url"], language="")
             st.caption("📋 Copy the network URL above to access from other devices on your network")
         else:
             st.caption("⚠️ Unable to detect network IP address")
