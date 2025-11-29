@@ -774,30 +774,23 @@ def main():
             # Show preview files
             if st.session_state.preview_data:
                 st.subheader("📋 Ready for Preview")
+                st.info("💡 Go to the 'Preview & Edit' tab to review and edit the processed files.")
 
-                # If a file is selected for preview, show the editor
-                if st.session_state.current_preview_file and st.session_state.current_preview_file in st.session_state.preview_data:
-                    render_preview_editor(st.session_state.current_preview_file)
-                else:
-                    # Show list of files to preview
-                    for filename, data in st.session_state.preview_data.items():
-                        df = data["data"]
-                        encoding = data["encoding"]
-                        relevant_count = (df["人数"] != "").sum()
+                # Show list of files to preview
+                for filename, data in st.session_state.preview_data.items():
+                    df = data["data"]
+                    encoding = data["encoding"]
+                    relevant_count = (df["人数"] != "").sum()
 
-                        col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
-                        with col1:
-                            st.text(filename)
-                        with col2:
-                            st.metric("Rows", len(df))
-                        with col3:
-                            st.metric("Relevant", relevant_count)
-                        with col4:
-                            st.metric("Encoding", encoding)
-                        with col5:
-                            if st.button("👁️ Preview", key=f"preview_{filename}"):
-                                st.session_state.current_preview_file = filename
-                                st.rerun()
+                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                    with col1:
+                        st.text(filename)
+                    with col2:
+                        st.metric("Rows", len(df))
+                    with col3:
+                        st.metric("Relevant", relevant_count)
+                    with col4:
+                        st.metric("Encoding", encoding)
 
             # Show processing summary
             if st.session_state.processed_data:
