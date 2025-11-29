@@ -282,40 +282,40 @@ def render_preview_editor(filename: str):
 
     display_df = df[relevant_mask].copy()
 
-    # Get attendee ID options for dropdown with names
-    # Create formatted options: "ID: Name (Company)"
-    attendee_options = [""] + [
-        f"{row['ID']}: {row['Name']} ({row['Company']})"
-        for _, row in attendee_ref.iterrows()
-    ]
+    # Get attendee ID options for dropdown
+    # Just use plain IDs for options
+    available_ids = [""] + attendee_ref["ID"].astype(str).tolist()
 
-    st.subheader("🔧 Edit Attendee IDs")
-    st.info("💡 Click on ID cells to select attendees by name. 人数 will auto-update based on filled IDs.")
-
-    # Replace ID values with formatted labels for display
-    display_df_formatted = display_df.copy()
+    # Create help text with ID to name mapping for reference
     id_cols = [f"ID{i}" for i in range(1, 9)]
 
-    # Create a mapping from ID to formatted label
-    id_to_label = {
-        str(row["ID"]): f"{row['ID']}: {row['Name']} ({row['Company']})"
-        for _, row in attendee_ref.iterrows()
-    }
+    st.subheader("🔧 Edit Attendee IDs")
+    st.info("💡 Click on ID cells to select attendees. Use the reference table below to find names. 人数 will auto-update based on filled IDs.")
 
-    # Convert existing IDs to formatted labels
-    for col in id_cols:
-        if col in display_df_formatted.columns:
-            display_df_formatted[col] = display_df_formatted[col].astype(str).apply(
-                lambda x: id_to_label.get(x, "") if x and x != "nan" and x != "" else ""
-            )
+    # Show ID reference table in an expander
+    with st.expander("📋 Attendee ID Reference"):
+        ref_df = attendee_ref[["ID", "Name", "Company"]].copy()
+        st.dataframe(ref_df, hide_index=True, use_container_width=True)
 
     # Select columns to display in editor - include 備考 after ID8
     display_cols = ["利用日", "ご利用店名及び商品名", "利用金額", "人数"] + id_cols + ["備考"]
-    display_cols = [col for col in display_cols if col in display_df_formatted.columns]
+    display_cols = [col for col in display_cols if col in display_df.columns]
+
+    # Create column config with help text showing names
+    id_column_config = {}
+    for i in range(1, 9):
+        col_name = f"ID{i}"
+        # Create help text with name mapping
+        id_column_config[col_name] = st.column_config.SelectboxColumn(
+            col_name,
+            help=f"Select attendee ID (see reference table above for names)",
+            options=available_ids,
+            required=False
+        )
 
     # Create editable dataframe
     edited_df = st.data_editor(
-        display_df_formatted[display_cols],
+        display_df[display_cols],
         width="stretch",
         num_rows="fixed",
         hide_index=False,
@@ -324,34 +324,22 @@ def render_preview_editor(filename: str):
             "ご利用店名及び商品名": st.column_config.TextColumn("店名", disabled=True, width="medium"),
             "利用金額": st.column_config.NumberColumn("金額", disabled=True),
             "人数": st.column_config.NumberColumn("人数", disabled=True),
-            **{f"ID{i}": st.column_config.SelectboxColumn(
-                f"ID{i}",
-                options=attendee_options,
-                required=False
-            ) for i in range(1, 9)},
+            **id_column_config,
             "備考": st.column_config.TextColumn("備考", width="medium", required=False),
         },
         key=f"preview_editor_{filename}"
     )
 
     # Auto-recalculate 人数 when IDs change
-    if not edited_df.equals(display_df_formatted[display_cols]):
+    if not edited_df.equals(display_df[display_cols]):
         st.info("🔄 Recalculating attendee counts...")
-
-        # Extract just the ID numbers from formatted labels
-        # Format is "ID: Name (Company)", we want just "ID"
-        for col in id_cols:
-            if col in edited_df.columns:
-                edited_df[col] = edited_df[col].apply(
-                    lambda x: x.split(":")[0].strip() if x and isinstance(x, str) and ":" in x else x
-                )
 
         for idx in edited_df.index:
             # Recalculate 人数
             new_count = recalculate_attendee_count(edited_df.loc[idx])
             edited_df.loc[idx, "人数"] = new_count
 
-        # Update the main dataframe with extracted IDs
+        # Update the main dataframe
         for col in display_cols:
             if col in edited_df.columns:
                 df.loc[edited_df.index, col] = edited_df[col]
