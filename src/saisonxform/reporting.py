@@ -29,8 +29,10 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
     # Stack all ID columns into a single series
     all_ids = pd.concat([transactions[col] for col in existing_id_cols], ignore_index=True)
 
-    # Filter out empty strings and get unique values
-    unique_ids = all_ids[all_ids != ""].unique()
+    # Filter out empty strings, NaN values, and ensure string type
+    # Convert to string first to handle any numeric or NaN values
+    all_ids = all_ids.astype(str)
+    unique_ids = all_ids[(all_ids != "") & (all_ids != "nan")].unique()
 
     if len(unique_ids) == 0:
         return pd.DataFrame(columns=["ID", "Name", "Title", "Company"])
@@ -73,9 +75,14 @@ def prepare_report_context(
     # Get unique attendees
     unique_attendees = get_unique_attendees(transactions, attendee_reference)
 
+    # Replace NaN values with empty string before converting to dict
+    # This prevents Jinja2 from rendering them as "nan"
+    transactions_clean = transactions.fillna("")
+    attendees_clean = unique_attendees.fillna("")
+
     # Convert DataFrames to list of dicts for template
-    transactions_list = transactions.to_dict("records")
-    attendees_list = unique_attendees.to_dict("records")
+    transactions_list = transactions_clean.to_dict("records")
+    attendees_list = attendees_clean.to_dict("records")
 
     # Get column names from DataFrame (preserves order)
     column_names = transactions.columns.tolist()

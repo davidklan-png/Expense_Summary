@@ -2,8 +2,10 @@
 
 Handles loading configuration from multiple sources with precedence:
 1. Environment variables (INPUT_DIR, REFERENCE_DIR, OUTPUT_DIR, ARCHIVE_DIR)
-2. config.toml in project root
-3. pyproject.toml [tool.saisonxform] section
+2. Explicitly provided config file (--config option)
+3. data/reference/config.toml (persistent configuration)
+4. config.toml in project root (fallback)
+5. pyproject.toml [tool.saisonxform] section (defaults)
 
 All paths are resolved relative to the project root for relative paths.
 """
@@ -67,12 +69,18 @@ class Config:
                     self._config.update(pyproject_data["tool"]["saisonxform"])
 
         # Override with config.toml if present
+        # Priority: 1. Explicitly provided, 2. data/reference/config.toml, 3. config.toml (root)
         if self.config_file:
             # Use explicitly provided config file
             config_toml_path = self.config_file
         else:
-            # Use default location
-            config_toml_path = self.project_root / "config.toml"
+            # Check data/reference/config.toml first (persistent config)
+            reference_config = self.project_root / "data" / "reference" / "config.toml"
+            if reference_config.exists():
+                config_toml_path = reference_config
+            else:
+                # Fall back to root config.toml
+                config_toml_path = self.project_root / "config.toml"
 
         if config_toml_path.exists():
             with open(config_toml_path, "rb") as f:
@@ -97,7 +105,7 @@ class Config:
         """Load and validate amount-based attendee estimation configuration.
 
         Returns:
-            Dict with 'brackets' and 'cost_per_person' keys, or None if not configured
+            Dict with 'brackets' and 'cost_per_person' keys, or None if not configured/disabled
 
         Warns (non-fatal) if configuration is invalid.
         """
@@ -106,6 +114,11 @@ class Config:
         amount_config = self._config.get("amount_based_attendees")
         if not amount_config or not isinstance(amount_config, dict):
             # Not configured - use default random behavior
+            return None
+
+        # Check if explicitly disabled
+        if not amount_config.get("enabled", True):
+            # User disabled amount-based logic - use random behavior
             return None
 
         try:

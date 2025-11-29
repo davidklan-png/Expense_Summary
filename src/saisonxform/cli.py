@@ -270,21 +270,18 @@ def run(
                 typer.echo("  • SKIPPED: Empty file")
                 continue
 
-            # Remove rows with missing transaction dates (e.g., cardholder name rows)
-            if "利用日" in df.columns:
-                original_count = len(df)
-                df = df[df["利用日"].notna()].copy()
-                if verbose and len(df) < original_count:
-                    typer.echo(f"  • Filtered out {original_count - len(df)} non-transaction rows")
+            # Keep ALL rows from input (including summary rows, cardholder names, etc.)
+            # Only identify which rows are relevant transactions for attendee assignment
+            if verbose:
+                typer.echo(f"  • Total rows: {len(df)}")
 
-            # Identify relevant transactions (meeting/entertainment expenses)
-            # Check for 科目＆No. column
-            if "科目＆No." not in df.columns:
-                typer.echo("  • SKIPPED: Missing required column '科目＆No.'")
-                continue
+            # Create mask for relevant transactions (会議費/接待費) with valid dates
+            # Only these rows will get attendee data populated
+            has_date = df["利用日"].notna() if "利用日" in df.columns else pd.Series([False] * len(df))
+            has_subject = df["科目＆No."].notna() if "科目＆No." in df.columns else pd.Series([False] * len(df))
 
-            # Create mask for relevant transactions (会議費/接待費)
-            relevant_mask = df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
+            # Relevant = has date AND has subject AND (会議費 OR 接待費)
+            relevant_mask = has_date & has_subject & df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
             relevant_count = relevant_mask.sum()
 
             if verbose:

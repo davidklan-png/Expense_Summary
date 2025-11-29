@@ -52,6 +52,6 @@ cost_per_person = 3000  # ¥3,000 per person average
 # You can adjust these ranges and attendee counts as needed
 [processing.amount_based_attendees.brackets]
 "0-5000" = { min = 2, max = 3 }        # Small transactions: 2-3 people
-"5001-15000" = { min = 3, max = 5 }    # Medium transactions: 3-5 people
-"15001-30000" = { min = 5, max = 8 }   # Large transactions: 5-8 people
-"30001-999999999" = { min = 6, max = 8 }  # Very large: 6-8 people
+"5001-8000" = { min = 3, max = 4 }    # Medium transactions: 3-5 people
+"8001-15000" = { min = 4, max = 6 }   # Large transactions: 5-8 people
+"15001-999999999" = { min = 5, max = 8 }  # Very large: 6-8 people

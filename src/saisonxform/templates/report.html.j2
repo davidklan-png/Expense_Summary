@@ -33,6 +33,9 @@
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
         }
         .metadata p {
             margin: 5px 0;
@@ -76,30 +79,34 @@
             text-align: right;
             font-family: 'Courier New', monospace;
         }
-        .attendee-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
+        .attendee-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 15px;
+            font-size: 14px;
         }
-        .attendee-card {
+        .attendee-table th {
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            text-align: left;
+        }
+        .attendee-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .attendee-table tbody tr:nth-child(even) {
             background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #0066cc;
         }
-        .attendee-card .id {
+        .attendee-table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+        .attendee-table .id-col {
             font-weight: bold;
             color: #0066cc;
-            font-size: 16px;
-        }
-        .attendee-card .name {
-            font-size: 14px;
-            margin: 5px 0;
-        }
-        .attendee-card .details {
-            font-size: 12px;
-            color: #666;
+            width: 80px;
         }
         .empty-state {
             text-align: center;
@@ -114,7 +121,7 @@
         {% if pre_header_rows and pre_header_rows|length > 0 %}
         <div class="metadata">
             {% for line in pre_header_rows %}
-            <p>{{ line|trim }}</p>
+            <p>{{ line|trim|replace(',', ' ') }}</p>
             {% endfor %}
         </div>
         {% endif %}
@@ -148,10 +155,11 @@
                 {% for transaction in transactions %}
                 <tr>
                     {% for column in column_names %}
-                    {% if column == '利用金額' and transaction[column] %}
-                    <td class="amount">¥{{ "{:,.0f}".format(transaction[column]) }}</td>
+                    {% if column == '利用金額' and transaction[column] and transaction[column] == transaction[column] %}
+                    <td class="amount">¥{{ "{:.0f}".format(transaction[column]) }}</td>
                     {% else %}
-                    <td>{{ transaction[column] or '' }}</td>
+                    {% set value = transaction[column] %}
+                    <td>{{ '' if (value != value or value is none or value == '' or value == 'nan') else value }}</td>
                     {% endif %}
                     {% endfor %}
                 </tr>
@@ -166,18 +174,26 @@
 
         <h2>出席者詳細</h2>
         {% if unique_attendees and unique_attendees|length > 0 %}
-        <div class="attendee-list">
-            {% for attendee in unique_attendees %}
-            <div class="attendee-card">
-                <div class="id">ID: {{ attendee['ID'] }}</div>
-                <div class="name">{{ attendee['Name'] }}</div>
-                <div class="details">
-                    {{ attendee['Title'] }}<br>
-                    {{ attendee['Company'] }}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+        <table class="attendee-table">
+            <thead>
+                <tr>
+                    <th class="id-col">ID</th>
+                    <th>Name</th>
+                    <th>Title</th>
+                    <th>Company</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attendee in unique_attendees %}
+                <tr>
+                    <td class="id-col">{{ attendee['ID'] }}</td>
+                    <td>{{ attendee['Name'] }}</td>
+                    <td>{{ attendee['Title'] }}</td>
+                    <td>{{ attendee['Company'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
         <div class="empty-state">
             <p>出席者データがありません</p>

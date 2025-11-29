@@ -76,9 +76,16 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Output directories (external to repo)
-# Note: Input/, Reference/, Output/, Archive/ are sibling directories
-# They should not be in this repo, but adding for safety
+# Data directories - user-accessible persistent data
+# Keep reference/ for attendee list and config persistence
+# Ignore input/output/archive as they contain transient data
+data/input/
+data/output/
+data/archive/
+!data/reference/
+!data/reference/*
+
+# Legacy external directories (for backward compatibility)
 Input/
 Reference/
 Output/

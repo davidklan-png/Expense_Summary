@@ -71,6 +71,32 @@ To access the web interface from other devices on your WiFi:
 
 See [WEB_INTERFACE_GUIDE.md](docs/guides/WEB_INTERFACE_GUIDE.md) for detailed usage instructions.
 
+## Directory Structure
+
+Saison Transform uses a data directory structure within the project for easy access and persistence:
+
+```
+saisonxform/
+├── data/
+│   ├── input/                    # Upload CSV files here (via web interface)
+│   ├── reference/                # Persistent configuration and reference data
+│   │   ├── NameList.csv          # Attendee list (persists in git)
+│   │   └── config.toml           # Configuration parameters (persists in git)
+│   ├── output/                   # Processed CSV and HTML reports
+│   └── archive/                  # Monthly archives of processed files
+├── config.toml                   # Legacy config location (fallback)
+└── web_app.py                    # Web interface
+```
+
+### Important Notes:
+
+- **Input files**: Upload transaction CSV files through the web interface only
+- **Reference folder**: Contains NameList.csv and config.toml which persist in git
+- **Configuration**: Stored in `data/reference/config.toml` for persistence across sessions
+- **Output/Archive**: Generated files are excluded from git (user data only)
+- **Best Practice**: Always use the web interface for processing real data
+- **Config Priority**: data/reference/config.toml → config.toml (root) → pyproject.toml defaults
+
 ## Quick Start
 
 ### Installation
@@ -197,27 +223,30 @@ open ./saisonxform-demo/Output/202510_sample.html
 
 ### Setup for Production Use
 
+The project comes with a `data/` directory structure ready to use:
+
 ```bash
-# 1. Create directory structure (outside any git repository)
-mkdir -p ~/saisonxform-data/{Input,Reference,Output}
+# 1. The directory structure is already created in data/
+# data/input, data/reference, data/output, data/archive
 
-# 2. Create your attendee reference list
-cat > ~/saisonxform-data/Reference/NameList.csv << 'EOF'
-ID,Name,Title,Company
-1,山田太郎,部長,ABC株式会社
-2,佐藤花子,課長,XYZ株式会社
-3,鈴木一郎,主任,DEF株式会社
-EOF
+# 2. Configuration and reference data are in data/reference/ (persisted in git)
+# Verify or update them:
+cat data/reference/NameList.csv      # Attendee list
+cat data/reference/config.toml       # Configuration parameters
 
-# 3. Copy your transaction CSV files to Input directory
-cp /path/to/your/202510_*.csv ~/saisonxform-data/Input/
+# 3. Use the web interface to upload and process files (recommended)
+./run_web.sh           # Local access
+./run_web_network.sh   # Network access
 
-# 4. Run the pipeline
-sf --input ~/saisonxform-data/Input \
-   --reference ~/saisonxform-data/Reference \
-   --output ~/saisonxform-data/Output \
-   --verbose
+# 4. Or use CLI for batch processing
+sf run --verbose
 ```
+
+**Note**:
+- The recommended workflow is to use the web interface for all real data processing
+- Upload files through the web UI rather than manually copying to data/input/
+- Configuration is stored in `data/reference/config.toml` and persists in git
+- Edit config parameters in `data/reference/config.toml` to customize processing behavior
 
 ### Usage
 
@@ -340,33 +369,65 @@ Beautiful report with:
 
 ## Configuration
 
+### Configuration Location
+
+The configuration is stored in `data/reference/config.toml` and persists in git for consistency across sessions.
+
 ### Priority Order
-1. CLI flags (highest)
-2. Environment variables
-3. `config.toml`
-4. `pyproject.toml` (lowest)
+1. Environment variables (highest)
+2. Explicitly provided config file (`--config` option)
+3. `data/reference/config.toml` (persistent configuration)
+4. `config.toml` (project root fallback)
+5. `pyproject.toml` (defaults, lowest)
 
-### Using config.toml
+### Amount-Based Attendee Estimation
 
-Create `config.toml` in project root:
+The system supports two modes for determining attendee counts:
+
+**Enabled (Default):** Attendee counts are determined by transaction amount using configurable brackets.
+**Disabled:** Random selection between min_attendees and max_attendees.
+
+Edit `data/reference/config.toml`:
+
+```toml
+[processing.amount_based_attendees]
+enabled = true  # Set to false to disable amount-based logic
+
+# Fallback calculation
+cost_per_person = 3000
+
+# Amount brackets (yen)
+[processing.amount_based_attendees.brackets]
+"0-5000" = { min = 2, max = 3 }        # Small transactions
+"5001-15000" = { min = 3, max = 5 }    # Medium transactions
+"15001-30000" = { min = 5, max = 8 }   # Large transactions
+"30001-999999999" = { min = 6, max = 8 }  # Very large
+```
+
+**How it works:**
+- When enabled: Matches transaction amount to bracket, randomly selects within bracket's min/max
+- If no bracket matches: Calculates `amount / cost_per_person` (minimum 2)
+- When disabled: Random selection between `min_attendees` and `max_attendees`
+
+### Other Configuration Options
 
 ```toml
 [paths]
-input_dir = "../Input"
-reference_dir = "../Reference"
-output_dir = "../Output"
-archive_dir = "../Archive"
+input_dir = "data/input"
+reference_dir = "data/reference"
+output_dir = "data/output"
+archive_dir = "data/archive"
 
 [processing]
-min_attendees = 2          # Minimum attendees
-max_attendees = 8          # Maximum attendees
+min_attendees = 2          # Used when amount-based is disabled
+max_attendees = 8          # Also caps fallback calculations
 
 [processing.primary_id_weights]
-"2" = 0.9                  # 90% probability
-"1" = 0.1                  # 10% probability
+"2" = 0.9                  # 90% probability for ID '2'
+"1" = 0.1                  # 10% probability for ID '1'
 ```
 
-See [`config.toml.example`](config.toml.example) for full configuration options.
+See [`data/reference/config.toml`](data/reference/config.toml) for full configuration with comments.
 
 ### Using Environment Variables
 

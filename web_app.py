@@ -171,9 +171,11 @@ def recalculate_attendee_count(row: pd.Series) -> int:
 
 def process_uploaded_file(
     uploaded_file, min_attendees: int = 2, max_attendees: int = 8,
-    id_2_weight: float = 0.9, id_1_weight: float = 0.1
+    id_2_weight: float = 0.9, id_1_weight: float = 0.1,
+    use_amount_based: bool = False, amount_brackets: Optional[dict] = None,
+    cost_per_person: int = 3000
 ) -> tuple[pd.DataFrame, str, list]:
-    """Process an uploaded CSV file."""
+    """Process an uploaded CSV file with optional amount-based attendee estimation."""
     temp_path = Path(f"/tmp/{uploaded_file.name}")
     with open(temp_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
@@ -184,18 +186,21 @@ def process_uploaded_file(
     if df.empty:
         raise ValueError("File is empty")
 
-    if "利用日" in df.columns:
-        df = df[df["利用日"].notna()].copy()
-
-    if "科目＆No." not in df.columns:
-        raise ValueError("Missing required column '科目＆No.'")
+    # Keep ALL rows from input (including summary rows, cardholder names, etc.)
+    # Only identify which rows are relevant transactions for attendee assignment
 
     attendee_ref = st.session_state.attendee_ref
     if attendee_ref is None:
         raise ValueError("Attendee reference not loaded")
 
     available_ids = attendee_ref["ID"].astype(str).tolist()
-    relevant_mask = df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
+
+    # Create mask for relevant transactions (会議費/接待費) with valid dates
+    has_date = df["利用日"].notna() if "利用日" in df.columns else pd.Series([False] * len(df))
+    has_subject = df["科目＆No."].notna() if "科目＆No." in df.columns else pd.Series([False] * len(df))
+
+    # Relevant = has date AND has subject AND (会議費 OR 接待費)
+    relevant_mask = has_date & has_subject & df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
 
     # Initialize columns
     df["人数"] = ""
@@ -206,7 +211,17 @@ def process_uploaded_file(
     if relevant_mask.sum() > 0:
         for idx in df[relevant_mask].index:
             amount = df.loc[idx, "利用金額"]
-            count = estimate_attendee_count(amount, min_attendees=min_attendees, max_attendees=max_attendees)
+
+            # Use amount-based logic if enabled
+            brackets_to_use = amount_brackets if use_amount_based else None
+
+            count = estimate_attendee_count(
+                amount,
+                min_attendees=min_attendees,
+                max_attendees=max_attendees,
+                amount_brackets=brackets_to_use,
+                cost_per_person=cost_per_person
+            )
             df.loc[idx, "人数"] = count
 
             ids_result = sample_attendee_ids(
@@ -276,9 +291,9 @@ def render_preview_editor(filename: str):
     st.subheader("🔧 Edit Attendee IDs")
     st.info("💡 Click on ID cells to edit attendee assignments. 人数 will auto-update.")
 
-    # Select columns to display in editor
+    # Select columns to display in editor - include 備考 after ID8
     id_cols = [f"ID{i}" for i in range(1, 9)]
-    display_cols = ["利用日", "ご利用店名及び商品名", "利用金額", "人数"] + id_cols
+    display_cols = ["利用日", "ご利用店名及び商品名", "利用金額", "人数"] + id_cols + ["備考"]
     display_cols = [col for col in display_cols if col in display_df.columns]
 
     # Create editable dataframe
@@ -297,6 +312,7 @@ def render_preview_editor(filename: str):
                 options=available_ids,
                 required=False
             ) for i in range(1, 9)},
+            "備考": st.column_config.TextColumn("備考", width="medium", required=False),
         },
         key=f"preview_editor_{filename}"
     )
@@ -594,15 +610,76 @@ def main():
                 st.caption(f"📄 {st.session_state.attendee_ref_path.name}")
 
         st.subheader("Processing Parameters")
-        min_attendees = st.slider("Min Attendees", 1, 10, 2)
-        max_attendees = st.slider("Max Attendees", 1, 15, 8)
+
+        # Load config values
+        config = st.session_state.config
+        use_amount_based = False
+        amount_brackets = None
+        cost_per_person = 3000
+
+        if config and config.amount_based_attendees:
+            use_amount_based = True
+            amount_brackets = config.amount_based_attendees.get("brackets")
+            cost_per_person = config.amount_based_attendees.get("cost_per_person", 3000)
+
+        # Amount-based toggle
+        use_amount_based = st.checkbox(
+            "Enable Amount-Based Attendee Estimation",
+            value=use_amount_based,
+            help="Use transaction amounts to determine attendee counts"
+        )
+
+        if use_amount_based:
+            st.info("📊 Using amount-based brackets from config")
+            if amount_brackets:
+                st.caption(f"💰 Cost per person: ¥{cost_per_person:,}")
+                with st.expander("View Amount Brackets"):
+                    for (min_amt, max_amt), attendee_range in amount_brackets.items():
+                        st.text(f"¥{min_amt:,}-{max_amt:,}: {attendee_range['min']}-{attendee_range['max']} people")
+            else:
+                st.warning("⚠️ Amount brackets not configured in config.toml")
+        else:
+            st.info("🎲 Using random attendee selection")
+
+        min_attendees = st.slider(
+            "Min Attendees",
+            1, 10,
+            config.min_attendees if config else 2,
+            help="Minimum attendees (used when amount-based is disabled)"
+        )
+        max_attendees = st.slider(
+            "Max Attendees",
+            1, 15,
+            config.max_attendees if config else 8,
+            help="Maximum attendees (also caps amount-based fallback)"
+        )
 
         st.subheader("ID Selection Weights")
-        id_2_weight = st.slider("ID '2' Weight", 0.0, 1.0, 0.9, 0.05)
-        id_1_weight = st.slider("ID '1' Weight", 0.0, 1.0, 0.1, 0.05)
+
+        # Get weights from config
+        default_weights = {"2": 0.9, "1": 0.1}
+        if config and config.primary_id_weights:
+            default_weights = config.primary_id_weights
+
+        id_2_weight = st.slider(
+            "ID '2' Weight",
+            0.0, 1.0,
+            float(default_weights.get("2", 0.9)),
+            0.05
+        )
+        id_1_weight = st.slider(
+            "ID '1' Weight",
+            0.0, 1.0,
+            float(default_weights.get("1", 0.1)),
+            0.05
+        )
 
         if abs((id_2_weight + id_1_weight) - 1.0) > 0.01:
             st.warning("⚠️ Weights should sum to 1.0")
+
+        # Config file location info
+        st.divider()
+        st.caption("⚙️ Edit `data/reference/config.toml` to adjust brackets and settings")
 
     # Main content area
     tab1, tab2, tab3, tab4 = st.tabs(["👥 Manage Attendees", "📤 Upload & Process", "✏️ Edit Data", "💾 Download Results"])
@@ -654,7 +731,8 @@ def main():
                             status_text.text(f"Processing {uploaded_file.name}...")
 
                             df, encoding, pre_header = process_uploaded_file(
-                                uploaded_file, min_attendees, max_attendees, id_2_weight, id_1_weight
+                                uploaded_file, min_attendees, max_attendees, id_2_weight, id_1_weight,
+                                use_amount_based, amount_brackets, cost_per_person
                             )
 
                             # Store in preview data instead of processed
