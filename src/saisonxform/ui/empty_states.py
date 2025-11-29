@@ -9,13 +9,12 @@ Professional empty state components with all design evaluation improvements:
 - Semantic icons and Japanese language support
 """
 
-from typing import Callable, Literal, Optional
+from typing import Literal, Optional
+from collections.abc import Callable
 
 import streamlit as st
 
 from saisonxform.ui.tokens.colors import ColorTokens
-from saisonxform.ui.tokens.effects import BorderRadius, Shadows
-from saisonxform.ui.tokens.spacing import Spacing
 from saisonxform.ui.tokens.typography import Typography
 
 
@@ -99,7 +98,7 @@ class EmptyState:
     @staticmethod
     def render(
         variant: Literal[
-            "no-documents", "no-results", "error", "loading", "success", "filtered", "offline"
+            "no-documents", "no-results", "error", "loading", "success", "filtered", "offline",
         ] = "no-documents",
         size: Literal["sm", "md", "lg"] = "md",
         title: Optional[str] = None,
@@ -138,6 +137,7 @@ class EmptyState:
         # Generate unique key suffix
         import hashlib
         import time
+
         if key_suffix is None:
             key_suffix = hashlib.md5(f"{variant}_{time.time()}".encode()).hexdigest()[:8]
 

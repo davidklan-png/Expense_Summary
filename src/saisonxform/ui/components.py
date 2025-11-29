@@ -77,7 +77,9 @@ class Card:
         st.markdown(card_html, unsafe_allow_html=True)
 
     @classmethod
-    def default(cls, content: str, title: Optional[str] = None, icon: Optional[str] = None, elevated: bool = False) -> None:
+    def default(
+        cls, content: str, title: Optional[str] = None, icon: Optional[str] = None, elevated: bool = False,
+    ) -> None:
         """Render default card."""
         cls.render(content, variant="default", title=title, icon=icon, elevated=elevated)
 
@@ -299,19 +301,46 @@ class Button:
         )
 
     @classmethod
-    def primary(cls, label: str, icon: Optional[str] = None, key: Optional[str] = None, disabled: bool = False, use_container_width: bool = False) -> bool:
+    def primary(
+        cls,
+        label: str,
+        icon: Optional[str] = None,
+        key: Optional[str] = None,
+        disabled: bool = False,
+        use_container_width: bool = False,
+    ) -> bool:
         """Render primary button."""
-        return cls.render(label, variant="primary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width)
+        return cls.render(
+            label, variant="primary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+        )
 
     @classmethod
-    def secondary(cls, label: str, icon: Optional[str] = None, key: Optional[str] = None, disabled: bool = False, use_container_width: bool = False) -> bool:
+    def secondary(
+        cls,
+        label: str,
+        icon: Optional[str] = None,
+        key: Optional[str] = None,
+        disabled: bool = False,
+        use_container_width: bool = False,
+    ) -> bool:
         """Render secondary button."""
-        return cls.render(label, variant="secondary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width)
+        return cls.render(
+            label, variant="secondary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+        )
 
     @classmethod
-    def danger(cls, label: str, icon: Optional[str] = None, key: Optional[str] = None, disabled: bool = False, use_container_width: bool = False) -> bool:
+    def danger(
+        cls,
+        label: str,
+        icon: Optional[str] = None,
+        key: Optional[str] = None,
+        disabled: bool = False,
+        use_container_width: bool = False,
+    ) -> bool:
         """Render danger button."""
-        return cls.render(label, variant="danger", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width)
+        return cls.render(
+            label, variant="danger", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+        )
 
 
 class Divider:
