@@ -10,7 +10,7 @@ import sys
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from playwright.config import BROWSERS, DEVICES, TEST_CONFIG
+from playwright_config import BROWSERS, DEVICES, TEST_CONFIG
 
 
 @pytest.fixture(scope="session")

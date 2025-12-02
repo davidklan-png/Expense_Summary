@@ -111,7 +111,7 @@ pytest tests/ui_tests/ -v --headed
 
 ## Test Configuration
 
-### Browser Configuration (`playwright.config.py`)
+### Browser Configuration (`playwright_config.py`)
 
 ```python
 BROWSERS = {
@@ -307,7 +307,7 @@ playwright install --with-deps
 
 ### Adding New Device Profiles
 
-Edit `playwright.config.py`:
+Edit `playwright_config.py`:
 
 ```python
 DEVICES = {

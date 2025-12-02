@@ -12,20 +12,20 @@ import time
 # Import configuration
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from playwright.config import BROWSERS, DEVICES, TEST_CONFIG, SAFARI_SPECIFIC_TESTS
+from playwright_config import BROWSERS, DEVICES, TEST_CONFIG, SAFARI_SPECIFIC_TESTS
 
 
 class TestCrossBrowserCore:
     """Core functionality tests across all browsers."""
 
-    @pytest.fixture(scope="class")
-    def base_url(self):
+    @pytest.fixture(scope="function")
+    def app_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
-    def test_app_loads_successfully(self, page: Page, base_url: str):
+    def test_app_loads_successfully(self, page: Page, app_url: str):
         """Test that the app loads without JavaScript errors."""
-        page.goto(base_url)
+        page.goto(app_url)
 
         # Wait for Streamlit to initialize
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
@@ -41,9 +41,9 @@ class TestCrossBrowserCore:
         critical_errors = [e for e in console_errors if "SyntaxError" in e or "TypeError" in e]
         assert len(critical_errors) == 0, f"JavaScript errors detected: {critical_errors}"
 
-    def test_network_info_displays_without_error(self, page: Page, base_url: str):
+    def test_network_info_displays_without_error(self, page: Page, app_url: str):
         """Test network information displays correctly (Safari regex fix)."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=🌐 Network Access", timeout=TEST_CONFIG["timeout"])
 
         # Should see URL in code block (not markdown link)
@@ -58,9 +58,9 @@ class TestCrossBrowserCore:
         regex_errors = [e for e in console_errors if "regular expression" in str(e).lower()]
         assert len(regex_errors) == 0, f"Regex errors detected: {regex_errors}"
 
-    def test_sidebar_navigation(self, page: Page, base_url: str):
+    def test_sidebar_navigation(self, page: Page, app_url: str):
         """Test sidebar settings are accessible."""
-        page.goto(base_url)
+        page.goto(app_url)
 
         # Check sidebar header
         settings_header = page.locator("text=⚙️ Settings")
@@ -70,9 +70,9 @@ class TestCrossBrowserCore:
         network_section = page.locator("text=🌐 Network Access")
         expect(network_section).to_be_visible()
 
-    def test_main_tabs_render(self, page: Page, base_url: str):
+    def test_main_tabs_render(self, page: Page, app_url: str):
         """Test that main navigation tabs render correctly."""
-        page.goto(base_url)
+        page.goto(app_url)
 
         # Wait for app to load
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
@@ -84,10 +84,10 @@ class TestCrossBrowserCore:
         # Verify content areas exist
         assert page.locator("text=Upload Files").count() > 0 or page.locator("text=📤").count() > 0
 
-    def test_responsive_layout_desktop(self, page: Page, base_url: str):
+    def test_responsive_layout_desktop(self, page: Page, app_url: str):
         """Test layout works on desktop resolution."""
         page.set_viewport_size({"width": 1920, "height": 1080})
-        page.goto(base_url)
+        page.goto(app_url)
 
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
@@ -95,9 +95,9 @@ class TestCrossBrowserCore:
         sidebar = page.locator('[data-testid="stSidebar"]')
         expect(sidebar).to_be_visible()
 
-    def test_file_upload_interface_exists(self, page: Page, base_url: str):
+    def test_file_upload_interface_exists(self, page: Page, app_url: str):
         """Test file upload interface is present and functional."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # Look for file uploader (Streamlit uses specific data-testid)
@@ -112,15 +112,15 @@ class TestCrossBrowserCore:
 class TestSafariSpecific:
     """Safari-specific compatibility tests."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="function")
     def base_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
     @pytest.mark.safari
-    def test_no_regex_errors_in_markdown(self, page: Page, base_url: str):
+    def test_no_regex_errors_in_markdown(self, page: Page, app_url: str):
         """Test that markdown rendering doesn't cause regex errors (Safari issue)."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         console_errors = []
@@ -134,9 +134,9 @@ class TestSafariSpecific:
         assert len(regex_errors) == 0, f"Safari regex errors detected: {regex_errors}"
 
     @pytest.mark.safari
-    def test_url_display_in_code_blocks(self, page: Page, base_url: str):
+    def test_url_display_in_code_blocks(self, page: Page, app_url: str):
         """Test URLs are displayed in code blocks (not markdown links)."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=🌐 Network Access", timeout=TEST_CONFIG["timeout"])
 
         # URLs should be in <code> elements
@@ -156,9 +156,9 @@ class TestSafariSpecific:
         assert has_url, "No URLs found in code blocks"
 
     @pytest.mark.safari
-    def test_webkit_font_rendering(self, page: Page, base_url: str):
+    def test_webkit_font_rendering(self, page: Page, app_url: str):
         """Test that Japanese fonts render correctly in Safari/WebKit."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # Check if page has Japanese text
@@ -172,7 +172,7 @@ class TestSafariSpecific:
 class TestDeviceEmulation:
     """Tests across different device types (Desktop, iPad)."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="function")
     def base_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
@@ -188,19 +188,19 @@ class TestDeviceEmulation:
             "User-Agent": device_config["user_agent"]
         })
 
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # App should load without errors
         assert "Saison Transform" in page.content()
 
     @pytest.mark.ipad
-    def test_touch_interactions_on_ipad(self, page: Page, base_url: str):
+    def test_touch_interactions_on_ipad(self, page: Page, app_url: str):
         """Test touch-friendly interface on iPad."""
         device_config = DEVICES["ipad_pro"]
         page.set_viewport_size(device_config["viewport"])
 
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # Sidebar should be collapsible on mobile/tablet
@@ -211,12 +211,12 @@ class TestDeviceEmulation:
         assert page.viewport_size["width"] == 1024
 
     @pytest.mark.ipad
-    def test_file_upload_on_touch_device(self, page: Page, base_url: str):
+    def test_file_upload_on_touch_device(self, page: Page, app_url: str):
         """Test file upload works on touch devices (iPad)."""
         device_config = DEVICES["ipad_pro"]
         page.set_viewport_size(device_config["viewport"])
 
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # File upload should be accessible
@@ -230,23 +230,23 @@ class TestDeviceEmulation:
 class TestAccessibility:
     """Accessibility and usability tests."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="function")
     def base_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
-    def test_semantic_html_structure(self, page: Page, base_url: str):
+    def test_semantic_html_structure(self, page: Page, app_url: str):
         """Test that page uses semantic HTML."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # Should have proper headings
         h1_count = page.locator("h1").count()
         assert h1_count >= 0  # Streamlit may use different heading structure
 
-    def test_keyboard_navigation(self, page: Page, base_url: str):
+    def test_keyboard_navigation(self, page: Page, app_url: str):
         """Test keyboard navigation works."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # Tab key should move focus
@@ -257,9 +257,9 @@ class TestAccessibility:
         focused = page.evaluate("document.activeElement.tagName")
         assert focused is not None
 
-    def test_color_contrast_sufficient(self, page: Page, base_url: str):
+    def test_color_contrast_sufficient(self, page: Page, app_url: str):
         """Test that color contrast meets WCAG standards."""
-        page.goto(base_url)
+        page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         # This is a basic check - full contrast testing requires additional tools
