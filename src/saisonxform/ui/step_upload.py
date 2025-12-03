@@ -78,10 +78,13 @@ def render_upload_step():
         # File count summary
         st.success(get_text('upload.files_ready', count=len(uploaded_files)))
 
-        # Automatically advance to next step (only if still on upload step)
-        if current_step == WorkflowStep.UPLOAD:
-            advance_to_next_step()
-            st.rerun()
+        # Manual advance button
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(get_text('upload.continue_to_process'), type="primary", use_container_width=True, key="advance_to_process"):
+                advance_to_next_step()
+                st.rerun()
 
     # Show cached files if uploader was cleared
     elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:

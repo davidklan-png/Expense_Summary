@@ -133,11 +133,13 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             with st.expander(get_text('process.edit_file', filename=selected_file), expanded=True):
                 render_editor_callback(selected_file)
 
-        # Automatically advance to download (only if still on process/edit step)
-        current_step = get_current_step()
-        if current_step == WorkflowStep.PROCESS_EDIT:
-            advance_to_next_step()
-            st.rerun()
+        # Manual advance button
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(get_text('process.continue_to_download'), type="primary", use_container_width=True, key="advance_to_download"):
+                advance_to_next_step()
+                st.rerun()
 
     # Section divider
     st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)

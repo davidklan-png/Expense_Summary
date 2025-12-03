@@ -40,6 +40,7 @@ TRANSLATIONS = {
             "files_cached": "📁 {count} file(s) cached from previous upload",
             "clear_cached": "🔄 Clear cached files",
             "error_no_attendee": "⚠️ **Attendee list not loaded!**\n\nPlease load the attendee reference file (NameList.csv) from the sidebar Settings before uploading files.",
+            "continue_to_process": "▶️ Continue to Process & Edit",
         },
 
         # Process Page
@@ -55,6 +56,7 @@ TRANSLATIONS = {
             "select_file": "Select file to edit",
             "edit_file": "📝 Edit: {filename}",
             "warning_no_files": "⚠️ No files uploaded. Please return to Step 1 to upload files.",
+            "continue_to_download": "✅ Continue to Download",
         },
 
         # Download Page
@@ -115,6 +117,7 @@ TRANSLATIONS = {
             "files_cached": "📁 {count} ファイルがキャッシュされています",
             "clear_cached": "🔄 キャッシュをクリア",
             "error_no_attendee": "⚠️ **参加者リストが読み込まれていません！**\n\nファイルをアップロードする前に、サイドバーの設定から参加者参照ファイル（NameList.csv）を読み込んでください。",
+            "continue_to_process": "▶️ 処理・編集に進む",
         },
 
         # Process Page
@@ -130,6 +133,7 @@ TRANSLATIONS = {
             "select_file": "編集するファイルを選択",
             "edit_file": "📝 編集: {filename}",
             "warning_no_files": "⚠️ ファイルがアップロードされていません。ステップ1に戻ってファイルをアップロードしてください。",
+            "continue_to_download": "✅ ダウンロードに進む",
         },
 
         # Download Page
