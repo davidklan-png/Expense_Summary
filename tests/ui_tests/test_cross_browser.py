@@ -114,7 +114,7 @@ class TestSafariSpecific:
     """Safari-specific compatibility tests."""
 
     @pytest.fixture(scope="function")
-    def base_url(self):
+    def app_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
@@ -174,12 +174,12 @@ class TestDeviceEmulation:
     """Tests across different device types (Desktop, iPad)."""
 
     @pytest.fixture(scope="function")
-    def base_url(self):
+    def app_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
     @pytest.mark.parametrize("device_name", ["desktop_mac", "desktop_windows", "ipad_pro"])
-    def test_app_loads_on_device(self, page: Page, base_url: str, device_name: str):
+    def test_app_loads_on_device(self, page: Page, app_url: str, device_name: str):
         """Test app loads correctly on different devices."""
         device_config = DEVICES[device_name]
 
@@ -230,7 +230,7 @@ class TestAccessibility:
     """Accessibility and usability tests."""
 
     @pytest.fixture(scope="function")
-    def base_url(self):
+    def app_url(self):
         """Base URL for the Streamlit app."""
         return TEST_CONFIG["base_url"]
 
