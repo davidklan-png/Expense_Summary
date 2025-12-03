@@ -13,7 +13,6 @@ from .workflow_state import WorkflowStep, advance_to_next_step, get_current_step
 
 def render_upload_step():
     """Render the file upload step."""
-    lang = st.session_state.get("language", "en")
     current_step = get_current_step()
 
     # Section header
@@ -23,10 +22,10 @@ def render_upload_step():
             <div class="section-header">
                 <h2 class="section-title">
                     <span class="section-number">1</span>
-                    {get_text('upload_title', lang)}
+                    {get_text('upload.title')}
                 </h2>
                 <p class="section-description">
-                    {get_text('upload_description', lang)}
+                    {get_text('upload.description')}
                 </p>
             </div>
         </div>
@@ -36,18 +35,18 @@ def render_upload_step():
 
     # Check if attendee list is loaded
     if st.session_state.attendee_ref is None:
-        st.error(get_text('error_no_attendee_list', lang))
+        st.error(get_text('upload.error_no_attendee'))
         return
 
     # Upload zone with prominent file uploader
-    st.markdown(f"### 📁 {get_text('select_files', lang)}")
-    st.caption(get_text('upload_zone_caption', lang))
+    st.markdown(f"### 📁 {get_text('upload.select_files')}")
+    st.caption(get_text('upload.zone_caption'))
 
     uploaded_files = st.file_uploader(
-        get_text('upload_csv_files', lang),
+        get_text('upload.csv_files'),
         type=["csv"],
         accept_multiple_files=True,
-        help=get_text('upload_help', lang),
+        help=get_text('upload.help'),
         key="file_uploader",
         label_visibility="collapsed",
     )
@@ -63,7 +62,7 @@ def render_upload_step():
 
         # Display uploaded files
         st.markdown("---")
-        st.markdown(f"### 📋 {get_text('uploaded_files', lang)}")
+        st.markdown(f"### 📋 {get_text('upload.uploaded_files')}")
 
         for uploaded_file in uploaded_files:
             file_size = len(uploaded_file.getvalue()) / 1024  # KB
@@ -77,7 +76,7 @@ def render_upload_step():
                 st.caption(f"{file_size:.1f} KB")
 
         # File count summary
-        st.success(get_text('files_ready', lang, count=len(uploaded_files)))
+        st.success(get_text('upload.files_ready', count=len(uploaded_files)))
 
         # Automatically advance to next step (only if still on upload step)
         if current_step == WorkflowStep.UPLOAD:
@@ -86,9 +85,9 @@ def render_upload_step():
 
     # Show cached files if uploader was cleared
     elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
-        st.info(get_text('files_cached', lang, count=len(st.session_state.uploaded_files_cache)))
+        st.info(get_text('upload.files_cached', count=len(st.session_state.uploaded_files_cache)))
 
-        if st.button(get_text('clear_cached_files', lang), type="secondary"):
+        if st.button(get_text('upload.clear_cached'), type="secondary"):
             st.session_state.uploaded_files_cache = {}
             st.rerun()
 

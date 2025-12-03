@@ -97,13 +97,13 @@ def can_access_step(step: WorkflowStep) -> bool:
     return False
 
 
-def get_step_status(step: WorkflowStep, lang: str = "en") -> str:
+def get_step_status(step: WorkflowStep) -> str:
     """Get step status for display."""
     if is_step_complete(step):
-        return get_text("status_complete", lang)
+        return get_text("steps.status_complete")
     elif st.session_state.workflow_step == step:
-        return get_text("status_in_progress", lang)
+        return get_text("steps.status_in_progress")
     elif can_access_step(step):
-        return get_text("status_ready", lang)
+        return get_text("steps.status_ready")
     else:
-        return get_text("status_locked", lang)
+        return get_text("steps.status_locked")
