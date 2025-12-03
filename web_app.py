@@ -253,9 +253,19 @@ def generate_report(file_data: dict) -> str:
     # Create temp output path
     temp_output = Path(f"/tmp/temp_report_{id(file_data)}.html")
 
+    # Convert string columns back to appropriate types for report generation
+    report_df = file_data["df"].copy()
+
+    # Convert numeric columns (amount/利用金額 and count/人数) back to numeric types
+    numeric_columns = ["利用金額", "人数"]
+    for col in numeric_columns:
+        if col in report_df.columns:
+            # Convert to numeric, coerce errors to NaN
+            report_df[col] = pd.to_numeric(report_df[col], errors="coerce")
+
     # Generate HTML report to temp file
     output_path = generate_html_report(
-        transactions=file_data["df"],
+        transactions=report_df,
         attendee_reference=st.session_state.attendee_ref,
         output_path=temp_output,
         source_filename="processed_data.csv",
