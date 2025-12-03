@@ -188,6 +188,11 @@ def render_editor(filename: str):
 
     file_data = st.session_state.processed_files[filename]
     df = file_data["df"].copy()
+
+    # Convert all columns to strings for consistent editing, handling NaN values
+    for col in df.columns:
+        df[col] = df[col].fillna("").astype(str)
+
     encoding = file_data["encoding"]
     unique_attendees = file_data.get("unique_attendees", [])
 
@@ -196,7 +201,8 @@ def render_editor(filename: str):
     with col1:
         st.metric("Total Rows", len(df))
     with col2:
-        relevant_count = (df["人数"] != "").sum()
+        # Filter out empty strings and 'nan' string values
+        relevant_count = ((df["人数"] != "") & (df["人数"] != "nan")).sum()
         st.metric("Processed Transactions", relevant_count)
     with col3:
         st.metric("Unique Attendees", len(unique_attendees))
@@ -209,14 +215,28 @@ def render_editor(filename: str):
     if show_all:
         display_df = df
     else:
-        # Show only rows with attendee data
-        display_df = df[df["人数"] != ""]
+        # Show only rows with attendee data (filter out empty and 'nan' strings)
+        display_df = df[(df["人数"] != "") & (df["人数"] != "nan")]
 
-    st.dataframe(
+    # Use data_editor for editable DataFrame
+    edited_df = st.data_editor(
         display_df,
         use_container_width=True,
         height=400,
+        num_rows="dynamic",  # Allow adding/deleting rows
+        key=f"editor_{filename}",
     )
+
+    # Update the session state with edited data if changes were made
+    if not edited_df.equals(display_df):
+        # Merge changes back into full dataframe
+        if show_all:
+            st.session_state.processed_files[filename]["df"] = edited_df.copy()
+        else:
+            # Update only the edited rows in the full dataframe
+            df.update(edited_df)
+            st.session_state.processed_files[filename]["df"] = df.copy()
+        st.success("✅ Changes saved!")
 
     # Unique attendees list
     if unique_attendees is not None and len(unique_attendees) > 0:
