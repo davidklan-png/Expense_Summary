@@ -49,7 +49,7 @@ jobs:
 
       - name: Run Chromium tests
         run: |
-          pytest tests/ui_tests/test_cross_browser.py -v --tb=short
+          pytest tests/ui_tests/test_cross_browser.py -v --tb=short --no-cov
         env:
           SAISONXFORM_SKIP_GIT_VALIDATION: "1"
 
@@ -98,13 +98,13 @@ jobs:
 
       - name: Run WebKit tests
         run: |
-          pytest tests/ui_tests/test_cross_browser.py -v --tb=short -m "not firefox"
+          pytest tests/ui_tests/test_cross_browser.py -v --tb=short --no-cov -m "not firefox"
         env:
           SAISONXFORM_SKIP_GIT_VALIDATION: "1"
 
       - name: Run Safari-specific tests
         run: |
-          pytest tests/ui_tests/test_cross_browser.py::TestSafariSpecific -v --tb=short
+          pytest tests/ui_tests/test_cross_browser.py::TestSafariSpecific -v --tb=short --no-cov
         env:
           SAISONXFORM_SKIP_GIT_VALIDATION: "1"
 
@@ -156,7 +156,7 @@ jobs:
 
       - name: Run device emulation tests
         run: |
-          pytest tests/ui_tests/test_cross_browser.py::TestDeviceEmulation -v --tb=short
+          pytest tests/ui_tests/test_cross_browser.py::TestDeviceEmulation -v --tb=short --no-cov
         env:
           SAISONXFORM_SKIP_GIT_VALIDATION: "1"
 
