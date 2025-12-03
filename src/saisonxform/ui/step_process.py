@@ -67,15 +67,11 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
     uploaded_cache = st.session_state.get("uploaded_files_cache", {})
 
     if not uploaded_cache:
-        st.warning(get_text('process.warning_no_files'))
+        st.warning(get_text("process.warning_no_files"))
         return
 
     # Determine which files need processing
-    unprocessed_files = [
-        filename
-        for filename in uploaded_cache.keys()
-        if filename not in processed_files
-    ]
+    unprocessed_files = [filename for filename in uploaded_cache.keys() if filename not in processed_files]
 
     # Process files automatically if needed
     if unprocessed_files:
@@ -95,7 +91,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
         status_text = st.empty()
 
         for idx, filename in enumerate(unprocessed_files):
-            status_text.text(get_text('process.processing_file', filename=filename))
+            status_text.text(get_text("process.processing_file", filename=filename))
             progress_bar.progress((idx + 1) / len(unprocessed_files))
 
             try:
@@ -108,20 +104,20 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     st.session_state.processed_files[filename] = result
 
             except Exception as e:
-                st.error(get_text('process.error_processing', filename=filename, error=str(e)))
+                st.error(get_text("process.error_processing", filename=filename, error=str(e)))
 
-        status_text.success(get_text('process.all_processed'))
+        status_text.success(get_text("process.all_processed"))
         progress_bar.empty()
         st.rerun()
 
     # Show editor if files are processed
     else:
-        st.success(get_text('process.files_ready', count=len(processed_files)))
+        st.success(get_text("process.files_ready", count=len(processed_files)))
 
         # File selector if multiple files
         if len(processed_files) > 1:
             selected_file = st.selectbox(
-                get_text('process.select_file'),
+                get_text("process.select_file"),
                 options=list(processed_files.keys()),
                 key="file_selector",
             )
@@ -130,14 +126,19 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
 
         # Render the editor for the selected file
         if selected_file:
-            with st.expander(get_text('process.edit_file', filename=selected_file), expanded=True):
+            with st.expander(get_text("process.edit_file", filename=selected_file), expanded=True):
                 render_editor_callback(selected_file)
 
         # Manual advance button
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button(get_text('process.continue_to_download'), type="primary", use_container_width=True, key="advance_to_download"):
+            if st.button(
+                get_text("process.continue_to_download"),
+                type="primary",
+                use_container_width=True,
+                key="advance_to_download",
+            ):
                 advance_to_next_step()
                 st.rerun()
 

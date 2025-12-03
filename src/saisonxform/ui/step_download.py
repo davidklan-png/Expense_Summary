@@ -62,38 +62,36 @@ def render_download_step(generate_report_callback):
     processed_files = st.session_state.get("processed_files", {})
 
     if not processed_files:
-        st.warning(get_text('download.warning_no_files'))
+        st.warning(get_text("download.warning_no_files"))
         return
 
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(get_text('download.metric_files'), len(processed_files))
+        st.metric(get_text("download.metric_files"), len(processed_files))
 
     with col2:
         total_rows = sum(len(data["df"]) for data in processed_files.values() if "df" in data)
-        st.metric(get_text('download.metric_transactions'), total_rows)
+        st.metric(get_text("download.metric_transactions"), total_rows)
 
     with col3:
-        total_attendees = sum(
-            len(data.get("unique_attendees", [])) for data in processed_files.values()
-        )
-        st.metric(get_text('download.metric_attendees'), total_attendees)
+        total_attendees = sum(len(data.get("unique_attendees", [])) for data in processed_files.values())
+        st.metric(get_text("download.metric_attendees"), total_attendees)
 
     with col4:
-        st.metric(get_text('download.metric_status'), get_text('steps.status_complete'))
+        st.metric(get_text("download.metric_status"), get_text("steps.status_complete"))
 
     st.markdown("---")
 
     # Download format selector
     download_format = st.radio(
-        get_text('download.select_format'),
+        get_text("download.select_format"),
         [
-            get_text('download.format_csv'),
-            get_text('download.format_excel'),
-            get_text('download.format_html'),
-            get_text('download.format_zip'),
+            get_text("download.format_csv"),
+            get_text("download.format_excel"),
+            get_text("download.format_html"),
+            get_text("download.format_zip"),
         ],
         horizontal=True,
     )
@@ -102,9 +100,9 @@ def render_download_step(generate_report_callback):
 
     # Individual file downloads
     # Check against translated format strings
-    format_csv_text = get_text('download.format_csv')
-    format_excel_text = get_text('download.format_excel')
-    format_html_text = get_text('download.format_html')
+    format_csv_text = get_text("download.format_csv")
+    format_excel_text = get_text("download.format_excel")
+    format_html_text = get_text("download.format_html")
 
     if download_format in [format_csv_text, format_excel_text, format_html_text]:
         st.markdown(f"### {get_text('download.individual')}")
@@ -121,7 +119,7 @@ def render_download_step(generate_report_callback):
                 if download_format == format_csv_text:
                     csv_data = file_data["df"].to_csv(index=False)
                     st.download_button(
-                        get_text('download.btn_csv'),
+                        get_text("download.btn_csv"),
                         csv_data,
                         file_name=f"processed_{filename}",
                         mime="text/csv",
@@ -135,7 +133,7 @@ def render_download_step(generate_report_callback):
                     excel_data = excel_buffer.getvalue()
 
                     st.download_button(
-                        get_text('download.btn_excel'),
+                        get_text("download.btn_excel"),
                         excel_data,
                         file_name=f"processed_{Path(filename).stem}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -146,7 +144,7 @@ def render_download_step(generate_report_callback):
                     html_report = generate_report_callback(file_data)
 
                     st.download_button(
-                        get_text('download.btn_html'),
+                        get_text("download.btn_html"),
                         html_report,
                         file_name=f"report_{Path(filename).stem}.html",
                         mime="text/html",
@@ -156,7 +154,7 @@ def render_download_step(generate_report_callback):
     # Batch download (ZIP)
     else:
         st.markdown(f"### {get_text('download.batch')}")
-        st.info(get_text('download.batch_info'))
+        st.info(get_text("download.batch_info"))
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -182,7 +180,7 @@ def render_download_step(generate_report_callback):
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.download_button(
-                get_text('download.btn_zip'),
+                get_text("download.btn_zip"),
                 zip_data,
                 file_name="saison_transform_results.zip",
                 mime="application/zip",
@@ -199,7 +197,9 @@ def render_download_step(generate_report_callback):
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button(get_text('download.btn_new_files'), type="primary", use_container_width=True, key="reset_from_download"):
+        if st.button(
+            get_text("download.btn_new_files"), type="primary", use_container_width=True, key="reset_from_download"
+        ):
             reset_workflow()
             st.rerun()
 

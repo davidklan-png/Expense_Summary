@@ -11,6 +11,7 @@ import time
 
 # Import configuration
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from playwright_config import BROWSERS, DEVICES, TEST_CONFIG, SAFARI_SPECIFIC_TESTS
 
@@ -184,9 +185,7 @@ class TestDeviceEmulation:
 
         # Set viewport and user agent
         page.set_viewport_size(device_config["viewport"])
-        page.context.set_extra_http_headers({
-            "User-Agent": device_config["user_agent"]
-        })
+        page.context.set_extra_http_headers({"User-Agent": device_config["user_agent"]})
 
         page.goto(app_url)
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])

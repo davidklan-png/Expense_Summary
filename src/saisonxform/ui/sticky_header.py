@@ -42,7 +42,7 @@ def render_sticky_header():
 
         with col1:
             st.markdown(f"### 💳 {get_text('global.app_title')}")
-            st.caption(get_text('global.app_subtitle'))
+            st.caption(get_text("global.app_subtitle"))
 
         with col2:
             # Step indicator using columns

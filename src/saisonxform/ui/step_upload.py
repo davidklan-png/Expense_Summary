@@ -35,18 +35,18 @@ def render_upload_step():
 
     # Check if attendee list is loaded
     if st.session_state.attendee_ref is None:
-        st.error(get_text('upload.error_no_attendee'))
+        st.error(get_text("upload.error_no_attendee"))
         return
 
     # Upload zone with prominent file uploader
     st.markdown(f"### 📁 {get_text('upload.select_files')}")
-    st.caption(get_text('upload.zone_caption'))
+    st.caption(get_text("upload.zone_caption"))
 
     uploaded_files = st.file_uploader(
-        get_text('upload.csv_files'),
+        get_text("upload.csv_files"),
         type=["csv"],
         accept_multiple_files=True,
-        help=get_text('upload.help'),
+        help=get_text("upload.help"),
         key="file_uploader",
         label_visibility="collapsed",
     )
@@ -76,21 +76,26 @@ def render_upload_step():
                 st.caption(f"{file_size:.1f} KB")
 
         # File count summary
-        st.success(get_text('upload.files_ready', count=len(uploaded_files)))
+        st.success(get_text("upload.files_ready", count=len(uploaded_files)))
 
         # Manual advance button
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button(get_text('upload.continue_to_process'), type="primary", use_container_width=True, key="advance_to_process"):
+            if st.button(
+                get_text("upload.continue_to_process"),
+                type="primary",
+                use_container_width=True,
+                key="advance_to_process",
+            ):
                 advance_to_next_step()
                 st.rerun()
 
     # Show cached files if uploader was cleared
     elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
-        st.info(get_text('upload.files_cached', count=len(st.session_state.uploaded_files_cache)))
+        st.info(get_text("upload.files_cached", count=len(st.session_state.uploaded_files_cache)))
 
-        if st.button(get_text('upload.clear_cached'), type="secondary"):
+        if st.button(get_text("upload.clear_cached"), type="secondary"):
             st.session_state.uploaded_files_cache = {}
             st.rerun()
 

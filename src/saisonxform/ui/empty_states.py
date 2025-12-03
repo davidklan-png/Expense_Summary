@@ -98,7 +98,13 @@ class EmptyState:
     @staticmethod
     def render(
         variant: Literal[
-            "no-documents", "no-results", "error", "loading", "success", "filtered", "offline",
+            "no-documents",
+            "no-results",
+            "error",
+            "loading",
+            "success",
+            "filtered",
+            "offline",
         ] = "no-documents",
         size: Literal["sm", "md", "lg"] = "md",
         title: Optional[str] = None,

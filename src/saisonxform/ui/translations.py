@@ -15,7 +15,6 @@ TRANSLATIONS = {
             "reset": "Reset",
             "language_selector_label": "Language",
         },
-
         # Workflow Steps
         "steps": {
             "step_1": "Upload",
@@ -26,7 +25,6 @@ TRANSLATIONS = {
             "status_ready": "📝 Ready",
             "status_locked": "🔒 Locked",
         },
-
         # Upload Page
         "upload": {
             "title": "Upload Your Files",
@@ -42,7 +40,6 @@ TRANSLATIONS = {
             "error_no_attendee": "⚠️ **Attendee list not loaded!**\n\nPlease load the attendee reference file (NameList.csv) from the sidebar Settings before uploading files.",
             "continue_to_process": "▶️ Continue to Process & Edit",
         },
-
         # Process Page
         "process": {
             "title": "Review & Edit",
@@ -58,7 +55,6 @@ TRANSLATIONS = {
             "warning_no_files": "⚠️ No files uploaded. Please return to Step 1 to upload files.",
             "continue_to_download": "✅ Continue to Download",
         },
-
         # Download Page
         "download": {
             "title": "Download Results",
@@ -92,7 +88,6 @@ TRANSLATIONS = {
             "reset": "リセット",
             "language_selector_label": "言語",
         },
-
         # Workflow Steps
         "steps": {
             "step_1": "アップロード",
@@ -103,7 +98,6 @@ TRANSLATIONS = {
             "status_ready": "📝 準備完了",
             "status_locked": "🔒 ロック中",
         },
-
         # Upload Page
         "upload": {
             "title": "ファイルをアップロード",
@@ -119,7 +113,6 @@ TRANSLATIONS = {
             "error_no_attendee": "⚠️ **参加者リストが読み込まれていません！**\n\nファイルをアップロードする前に、サイドバーの設定から参加者参照ファイル（NameList.csv）を読み込んでください。",
             "continue_to_process": "▶️ 処理・編集に進む",
         },
-
         # Process Page
         "process": {
             "title": "確認・編集",
@@ -135,7 +128,6 @@ TRANSLATIONS = {
             "warning_no_files": "⚠️ ファイルがアップロードされていません。ステップ1に戻ってファイルをアップロードしてください。",
             "continue_to_download": "✅ ダウンロードに進む",
         },
-
         # Download Page
         "download": {
             "title": "結果をダウンロード",
@@ -160,7 +152,7 @@ TRANSLATIONS = {
             "btn_zip": "📦 すべてダウンロード（ZIP）",
             "btn_new_files": "🔄 新しいファイルを処理",
         },
-    }
+    },
 }
 
 
@@ -169,12 +161,12 @@ def load_translations():
 
     This should be called once at app initialization.
     """
-    if 'translations' not in st.session_state:
+    if "translations" not in st.session_state:
         st.session_state.translations = TRANSLATIONS
 
     # Initialize language preference
-    if 'lang' not in st.session_state:
-        st.session_state.lang = 'en'
+    if "lang" not in st.session_state:
+        st.session_state.lang = "en"
 
 
 def get_text(key_path: str, **kwargs) -> str:
@@ -196,11 +188,11 @@ def get_text(key_path: str, **kwargs) -> str:
         '✅ **3 file(s)** ready for processing'
     """
     # Get current language from session state
-    lang = st.session_state.get('lang', 'en')
+    lang = st.session_state.get("lang", "en")
 
     # Navigate nested dictionary using dot notation
-    keys = key_path.split('.')
-    text = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
+    keys = key_path.split(".")
+    text = TRANSLATIONS.get(lang, TRANSLATIONS["en"])
 
     for key in keys:
         if isinstance(text, dict):

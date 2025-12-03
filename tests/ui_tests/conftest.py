@@ -38,20 +38,11 @@ def browser(playwright, browser_type_name):
     browser_config = BROWSERS.get(browser_type_name, BROWSERS["chromium"])
 
     if browser_type_name == "chromium":
-        browser = playwright.chromium.launch(
-            headless=browser_config["headless"],
-            args=browser_config["args"]
-        )
+        browser = playwright.chromium.launch(headless=browser_config["headless"], args=browser_config["args"])
     elif browser_type_name == "webkit":
-        browser = playwright.webkit.launch(
-            headless=browser_config["headless"],
-            args=browser_config["args"]
-        )
+        browser = playwright.webkit.launch(headless=browser_config["headless"], args=browser_config["args"])
     elif browser_type_name == "firefox":
-        browser = playwright.firefox.launch(
-            headless=browser_config["headless"],
-            args=browser_config["args"]
-        )
+        browser = playwright.firefox.launch(headless=browser_config["headless"], args=browser_config["args"])
     else:
         browser = playwright.chromium.launch()
 
