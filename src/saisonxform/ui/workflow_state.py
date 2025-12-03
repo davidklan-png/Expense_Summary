@@ -8,6 +8,8 @@ from typing import Optional
 
 import streamlit as st
 
+from .translations import get_text
+
 
 class WorkflowStep(Enum):
     """Workflow steps enumeration."""
@@ -95,13 +97,13 @@ def can_access_step(step: WorkflowStep) -> bool:
     return False
 
 
-def get_step_status(step: WorkflowStep) -> str:
+def get_step_status(step: WorkflowStep, lang: str = "en") -> str:
     """Get step status for display."""
     if is_step_complete(step):
-        return "✅ Complete"
+        return get_text("status_complete", lang)
     elif st.session_state.workflow_step == step:
-        return "⏳ In Progress"
+        return get_text("status_in_progress", lang)
     elif can_access_step(step):
-        return "📝 Ready"
+        return get_text("status_ready", lang)
     else:
-        return "🔒 Locked"
+        return get_text("status_locked", lang)

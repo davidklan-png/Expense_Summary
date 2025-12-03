@@ -7,25 +7,26 @@ from typing import List, Optional
 
 import streamlit as st
 
+from .translations import get_text
 from .workflow_state import WorkflowStep, advance_to_next_step, get_current_step
 
 
 def render_upload_step():
     """Render the file upload step."""
+    lang = st.session_state.get("language", "en")
     current_step = get_current_step()
 
     # Section header
     st.markdown(
-        """
+        f"""
         <div class="workflow-section animate-in" id="step-1">
             <div class="section-header">
                 <h2 class="section-title">
                     <span class="section-number">1</span>
-                    Upload Your Files
+                    {get_text('upload_title', lang)}
                 </h2>
                 <p class="section-description">
-                    Upload one or more Saison transaction CSV files to begin processing.
-                    Drag and drop files or click to browse.
+                    {get_text('upload_description', lang)}
                 </p>
             </div>
         </div>
@@ -35,24 +36,18 @@ def render_upload_step():
 
     # Check if attendee list is loaded
     if st.session_state.attendee_ref is None:
-        st.error(
-            """
-            ⚠️ **Attendee list not loaded!**
-
-            Please load the attendee reference file (NameList.csv) from the sidebar Settings before uploading files.
-            """,
-        )
+        st.error(get_text('error_no_attendee_list', lang))
         return
 
     # Upload zone with prominent file uploader
-    st.markdown("### 📁 Select Files")
-    st.caption("Drag and drop files here or click 'Browse files' button • Accepts CSV files • Max 200MB per file")
+    st.markdown(f"### 📁 {get_text('select_files', lang)}")
+    st.caption(get_text('upload_zone_caption', lang))
 
     uploaded_files = st.file_uploader(
-        "Upload CSV files",
+        get_text('upload_csv_files', lang),
         type=["csv"],
         accept_multiple_files=True,
-        help="Upload Saison transaction CSV files for processing",
+        help=get_text('upload_help', lang),
         key="file_uploader",
         label_visibility="collapsed",
     )
@@ -68,7 +63,7 @@ def render_upload_step():
 
         # Display uploaded files
         st.markdown("---")
-        st.markdown("### 📋 Uploaded Files")
+        st.markdown(f"### 📋 {get_text('uploaded_files', lang)}")
 
         for uploaded_file in uploaded_files:
             file_size = len(uploaded_file.getvalue()) / 1024  # KB
@@ -82,7 +77,7 @@ def render_upload_step():
                 st.caption(f"{file_size:.1f} KB")
 
         # File count summary
-        st.success(f"✅ **{len(uploaded_files)} file(s)** ready for processing")
+        st.success(get_text('files_ready', lang, count=len(uploaded_files)))
 
         # Automatically advance to next step (only if still on upload step)
         if current_step == WorkflowStep.UPLOAD:
@@ -91,9 +86,9 @@ def render_upload_step():
 
     # Show cached files if uploader was cleared
     elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
-        st.info(f"📁 {len(st.session_state.uploaded_files_cache)} file(s) cached from previous upload")
+        st.info(get_text('files_cached', lang, count=len(st.session_state.uploaded_files_cache)))
 
-        if st.button("🔄 Clear cached files", type="secondary"):
+        if st.button(get_text('clear_cached_files', lang), type="secondary"):
             st.session_state.uploaded_files_cache = {}
             st.rerun()
 

@@ -6,7 +6,14 @@ File processing, preview, and editing interface.
 import pandas as pd
 import streamlit as st
 
-from .workflow_state import WorkflowStep, advance_to_next_step, can_access_step, is_step_complete, get_current_step
+from .translations import get_text
+from .workflow_state import (
+    WorkflowStep,
+    advance_to_next_step,
+    can_access_step,
+    get_current_step,
+    is_step_complete,
+)
 
 
 def render_process_edit_step(process_file_callback, render_editor_callback):
@@ -16,18 +23,20 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
         process_file_callback: Function to process uploaded files
         render_editor_callback: Function to render the editor interface
     """
+    lang = st.session_state.get("language", "en")
+
     # Check if this step is accessible
     if not can_access_step(WorkflowStep.PROCESS_EDIT):
         st.markdown(
-            """
+            f"""
             <div class="workflow-section section-locked" id="step-2">
                 <div class="section-header">
                     <h2 class="section-title">
                         <span class="section-number">2</span>
-                        Review & Edit
+                        {get_text('process_title', lang)}
                     </h2>
                     <p class="section-description">
-                        Process files and review the generated data. Edit attendee information and preview results.
+                        {get_text('process_description', lang)}
                     </p>
                 </div>
             </div>
@@ -39,15 +48,15 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
 
     # Section header
     st.markdown(
-        """
+        f"""
         <div class="workflow-section animate-in" id="step-2">
             <div class="section-header">
                 <h2 class="section-title">
                     <span class="section-number">2</span>
-                    Review & Edit
+                    {get_text('process_title', lang)}
                 </h2>
                 <p class="section-description">
-                    Process your files and review the generated data. Edit attendee information as needed.
+                    {get_text('process_description', lang)}
                 </p>
             </div>
         </div>
@@ -60,7 +69,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
     uploaded_cache = st.session_state.get("uploaded_files_cache", {})
 
     if not uploaded_cache:
-        st.warning("⚠️ No files uploaded. Please return to Step 1 to upload files.")
+        st.warning(get_text('warning_no_files', lang))
         return
 
     # Determine which files need processing
@@ -76,8 +85,8 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             f"""
             <div class="progress-container">
                 <div class="progress-header">
-                    <div class="progress-title">⏳ Processing Files</div>
-                    <div class="progress-count">{len(unprocessed_files)} files</div>
+                    <div class="progress-title">⏳ {get_text('processing_files', lang)}</div>
+                    <div class="progress-count">{len(unprocessed_files)} {get_text('files_label', lang)}</div>
                 </div>
             </div>
             """,
@@ -88,7 +97,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
         status_text = st.empty()
 
         for idx, filename in enumerate(unprocessed_files):
-            status_text.text(f"Processing {filename}...")
+            status_text.text(get_text('processing_file', lang, filename=filename))
             progress_bar.progress((idx + 1) / len(unprocessed_files))
 
             try:
@@ -101,20 +110,20 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     st.session_state.processed_files[filename] = result
 
             except Exception as e:
-                st.error(f"❌ Error processing {filename}: {str(e)}")
+                st.error(get_text('error_processing_file', lang, filename=filename, error=str(e)))
 
-        status_text.success("✅ All files processed!")
+        status_text.success(get_text('all_files_processed', lang))
         progress_bar.empty()
         st.rerun()
 
     # Show editor if files are processed
     else:
-        st.success(f"✅ **{len(processed_files)} file(s)** processed and ready for review")
+        st.success(get_text('files_processed_ready', lang, count=len(processed_files)))
 
         # File selector if multiple files
         if len(processed_files) > 1:
             selected_file = st.selectbox(
-                "Select file to edit",
+                get_text('select_file_to_edit', lang),
                 options=list(processed_files.keys()),
                 key="file_selector",
             )
@@ -123,7 +132,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
 
         # Render the editor for the selected file
         if selected_file:
-            with st.expander(f"📝 Edit: {selected_file}", expanded=True):
+            with st.expander(get_text('edit_file', lang, filename=selected_file), expanded=True):
                 render_editor_callback(selected_file)
 
         # Automatically advance to download (only if still on process/edit step)
