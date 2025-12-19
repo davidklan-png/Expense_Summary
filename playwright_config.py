@@ -4,7 +4,6 @@ Defines browser configurations, devices, and test settings for
 comprehensive UI/UX testing across platforms.
 """
 
-from typing import Dict
 
 # Browser configurations
 BROWSERS = {

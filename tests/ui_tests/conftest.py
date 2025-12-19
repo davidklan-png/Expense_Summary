@@ -3,16 +3,18 @@
 Provides fixtures and configuration for Playwright-based UI testing.
 """
 
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Conditional import - only available when playwright is installed
 try:
-    from playwright.sync_api import sync_playwright, Browser, Page, BrowserContext
+    from playwright.sync_api import sync_playwright  # Browser, BrowserContext, Page not used
+
     from playwright_config import BROWSERS, DEVICES, TEST_CONFIG
 
     PLAYWRIGHT_AVAILABLE = True

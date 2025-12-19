@@ -3,18 +3,15 @@
 File upload interface with drag-and-drop support and validation.
 """
 
-from typing import List, Optional
 
 import streamlit as st
 
 from .translations import get_text
-from .workflow_state import WorkflowStep, advance_to_next_step, get_current_step
+from .workflow_state import advance_to_next_step
 
 
 def render_upload_step():
     """Render the file upload step."""
-    current_step = get_current_step()
-
     # Section header
     st.markdown(
         f"""

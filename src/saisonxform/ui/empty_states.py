@@ -9,8 +9,8 @@ Professional empty state components with all design evaluation improvements:
 - Semantic icons and Japanese language support
 """
 
-from typing import Literal, Optional
 from collections.abc import Callable
+from typing import Literal, Optional
 
 import streamlit as st
 

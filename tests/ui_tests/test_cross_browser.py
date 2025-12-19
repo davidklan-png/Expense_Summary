@@ -4,16 +4,15 @@ Tests core functionality across Chromium, WebKit (Safari), and different devices
 Focuses on Safari compatibility issues and cross-platform consistency.
 """
 
-import pytest
-from playwright.sync_api import Page, expect
-from pathlib import Path
-import time
-
 # Import configuration
 import sys
+from pathlib import Path
+
+import pytest
+from playwright.sync_api import Page, expect
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from playwright_config import BROWSERS, DEVICES, TEST_CONFIG, SAFARI_SPECIFIC_TESTS
+from playwright_config import DEVICES, TEST_CONFIG
 
 
 class TestCrossBrowserCore:

@@ -64,16 +64,12 @@ def render_sticky_header():
                     # Determine emoji based on actual step state (not translated text)
                     if is_step_complete(step):
                         emoji = "✅"
-                        color = "green"
                     elif is_current:
                         emoji = step_info["number"]
-                        color = "blue"
                     elif can_access_step(step):
                         emoji = step_info["number"]
-                        color = "gray"
                     else:
                         emoji = "🔒"
-                        color = "lightgray"
 
                     st.markdown(f"**{emoji} {step_info['label']}**")
                     st.caption(status)

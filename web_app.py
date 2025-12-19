@@ -6,9 +6,7 @@ Interactive web application with vertical scroll-based workflow:
 3. Download - Download results in multiple formats
 """
 
-import io
 import sys
-import zipfile
 from pathlib import Path
 from typing import Optional
 
@@ -22,15 +20,11 @@ from saisonxform.config import Config
 from saisonxform.io import read_csv_with_detection
 from saisonxform.reporting import generate_html_report, get_unique_attendees
 from saisonxform.selectors import estimate_attendee_count, sample_attendee_ids
-from saisonxform.ui.sticky_header import render_sticky_header
 from saisonxform.ui.step_download import render_download_step
 from saisonxform.ui.step_process import render_process_edit_step
 from saisonxform.ui.step_upload import render_upload_step
-from saisonxform.ui.workflow_state import (
-    WorkflowStep,
-    get_current_step,
-    initialize_workflow_state,
-)
+from saisonxform.ui.sticky_header import render_sticky_header
+from saisonxform.ui.workflow_state import initialize_workflow_state
 from saisonxform.ui.workflow_styles import get_auto_scroll_script, get_workflow_styles
 
 # Page configuration
@@ -199,7 +193,6 @@ def render_editor(filename: str):
     for col in df.columns:
         df[col] = df[col].fillna("").astype(str)
 
-    encoding = file_data["encoding"]
     unique_attendees = file_data.get("unique_attendees", [])
 
     # Metrics
@@ -341,8 +334,6 @@ def main():
                     st.error(f"❌ Error: {e}")
 
     # Main content - vertical workflow
-    current_step = get_current_step()
-
     # Step 1: Upload
     render_upload_step()
 

@@ -4,7 +4,6 @@ Manages the three-step workflow state using Streamlit session state.
 """
 
 from enum import Enum
-from typing import Optional
 
 import streamlit as st
 
