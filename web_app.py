@@ -126,7 +126,13 @@ def process_file(filename: str, file_bytes: bytes) -> dict:
     # Create mask for relevant transactions
     has_date = df["利用日"].notna() if "利用日" in df.columns else pd.Series([False] * len(df))
     has_subject = df["科目＆No."].notna() if "科目＆No." in df.columns else pd.Series([False] * len(df))
-    relevant_mask = has_date & has_subject & df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
+
+    if "科目＆No." in df.columns:
+        has_category = df["科目＆No."].str.contains("会議費|接待費", na=False, regex=True)
+    else:
+        has_category = pd.Series([False] * len(df))
+
+    relevant_mask = has_date & has_subject & has_category
 
     # Initialize columns
     df["人数"] = ""
