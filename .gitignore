@@ -110,3 +110,11 @@ openspec/changes/archive/
 *.tmp
 *.bak
 *.log
+
+# UI Test Artifacts
+tests/ui_tests/screenshots/
+tests/ui_tests/videos/
+tests/ui_tests/traces/
+.pytest_cache/
+playwright-report/
+test-results/

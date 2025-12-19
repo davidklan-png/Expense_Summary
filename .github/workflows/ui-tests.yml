@@ -1,0 +1,169 @@
+name: UI/UX Cross-Browser Tests
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'web_app.py'
+      - 'src/saisonxform/ui/**'
+      - 'src/saisonxform/templates/**'
+      - '.streamlit/**'
+      - 'tests/ui_tests/**'
+      - '.github/workflows/ui-tests.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'web_app.py'
+      - 'src/saisonxform/ui/**'
+      - 'src/saisonxform/templates/**'
+      - '.streamlit/**'
+      - 'tests/ui_tests/**'
+
+jobs:
+  ui-tests-chromium:
+    name: UI Tests (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-playwright
+          playwright install chromium
+
+      - name: Start Streamlit app
+        run: |
+          streamlit run web_app.py --server.port 8502 --server.headless true &
+          sleep 10  # Wait for app to start
+        env:
+          STREAMLIT_SERVER_HEADLESS: true
+
+      - name: Run Chromium tests
+        run: |
+          pytest tests/ui_tests/test_cross_browser.py -v --tb=short --no-cov
+        env:
+          SAISONXFORM_SKIP_GIT_VALIDATION: "1"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-test-screenshots
+          path: tests/ui_tests/screenshots/
+          retention-days: 7
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-test-traces
+          path: tests/ui_tests/traces/
+          retention-days: 7
+
+  ui-tests-webkit:
+    name: UI Tests (WebKit/Safari)
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-playwright
+          playwright install webkit
+
+      - name: Start Streamlit app
+        run: |
+          streamlit run web_app.py --server.port 8502 --server.headless true &
+          sleep 10  # Wait for app to start
+        env:
+          STREAMLIT_SERVER_HEADLESS: true
+
+      - name: Run WebKit tests
+        run: |
+          pytest tests/ui_tests/test_cross_browser.py -v --tb=short --no-cov -m "not firefox"
+        env:
+          SAISONXFORM_SKIP_GIT_VALIDATION: "1"
+
+      - name: Run Safari-specific tests
+        run: |
+          pytest tests/ui_tests/test_cross_browser.py::TestSafariSpecific -v --tb=short --no-cov
+        env:
+          SAISONXFORM_SKIP_GIT_VALIDATION: "1"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-test-screenshots
+          path: tests/ui_tests/screenshots/
+          retention-days: 7
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-test-traces
+          path: tests/ui_tests/traces/
+          retention-days: 7
+
+  ui-tests-devices:
+    name: UI Tests (Device Emulation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        device: [desktop_mac, desktop_windows, ipad_pro]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-playwright
+          playwright install chromium
+
+      - name: Start Streamlit app
+        run: |
+          streamlit run web_app.py --server.port 8502 --server.headless true &
+          sleep 10  # Wait for app to start
+        env:
+          STREAMLIT_SERVER_HEADLESS: true
+
+      - name: Run device emulation tests
+        run: |
+          pytest tests/ui_tests/test_cross_browser.py::TestDeviceEmulation -v --tb=short --no-cov
+        env:
+          SAISONXFORM_SKIP_GIT_VALIDATION: "1"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.device }}-test-screenshots
+          path: tests/ui_tests/screenshots/
+          retention-days: 7

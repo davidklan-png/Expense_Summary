@@ -9,8 +9,8 @@ Professional empty state components with all design evaluation improvements:
 - Semantic icons and Japanese language support
 """
 
-from typing import Literal, Optional
 from collections.abc import Callable
+from typing import Literal, Optional
 
 import streamlit as st
 
@@ -98,7 +98,13 @@ class EmptyState:
     @staticmethod
     def render(
         variant: Literal[
-            "no-documents", "no-results", "error", "loading", "success", "filtered", "offline",
+            "no-documents",
+            "no-results",
+            "error",
+            "loading",
+            "success",
+            "filtered",
+            "offline",
         ] = "no-documents",
         size: Literal["sm", "md", "lg"] = "md",
         title: Optional[str] = None,

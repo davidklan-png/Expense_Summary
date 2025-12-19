@@ -78,7 +78,11 @@ class Card:
 
     @classmethod
     def default(
-        cls, content: str, title: Optional[str] = None, icon: Optional[str] = None, elevated: bool = False,
+        cls,
+        content: str,
+        title: Optional[str] = None,
+        icon: Optional[str] = None,
+        elevated: bool = False,
     ) -> None:
         """Render default card."""
         cls.render(content, variant="default", title=title, icon=icon, elevated=elevated)
@@ -311,7 +315,12 @@ class Button:
     ) -> bool:
         """Render primary button."""
         return cls.render(
-            label, variant="primary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+            label,
+            variant="primary",
+            icon=icon,
+            key=key,
+            disabled=disabled,
+            use_container_width=use_container_width,
         )
 
     @classmethod
@@ -325,7 +334,12 @@ class Button:
     ) -> bool:
         """Render secondary button."""
         return cls.render(
-            label, variant="secondary", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+            label,
+            variant="secondary",
+            icon=icon,
+            key=key,
+            disabled=disabled,
+            use_container_width=use_container_width,
         )
 
     @classmethod
@@ -339,7 +353,12 @@ class Button:
     ) -> bool:
         """Render danger button."""
         return cls.render(
-            label, variant="danger", icon=icon, key=key, disabled=disabled, use_container_width=use_container_width,
+            label,
+            variant="danger",
+            icon=icon,
+            key=key,
+            disabled=disabled,
+            use_container_width=use_container_width,
         )
 
 

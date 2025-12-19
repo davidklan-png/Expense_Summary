@@ -83,7 +83,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
             try:
                 with open(file_path, encoding=enc) as f:
                     for idx, line in enumerate(f):
-                        if idx >= 10:  # Only scan first 10 rows
+                        if idx >= 20:  # Only scan first 20 rows
                             break
 
                         # Check if this line contains all required columns (or their aliases)
