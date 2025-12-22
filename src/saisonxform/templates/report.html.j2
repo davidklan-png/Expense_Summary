@@ -121,7 +121,9 @@
         {% if pre_header_rows and pre_header_rows|length > 0 %}
         <div class="metadata">
             {% for line in pre_header_rows %}
+            {% if line|trim %}
             <p>{{ line|trim|replace(',', ' ') }}</p>
+            {% endif %}
             {% endfor %}
         </div>
         {% endif %}
@@ -157,6 +159,13 @@
                     {% for column in column_names %}
                     {% if column == '利用金額' and transaction[column] and transaction[column] == transaction[column] %}
                     <td class="amount">¥{{ "{:.0f}".format(transaction[column]) }}</td>
+                    {% elif column == '人数' %}
+                    {% set value = transaction[column] %}
+                    {% if value and value != '' and value != 'nan' and value is not none %}
+                    <td>{{ "{:.0f}".format(value|float) if value|string|replace('.','',1).isdigit() else value }}</td>
+                    {% else %}
+                    <td></td>
+                    {% endif %}
                     {% else %}
                     {% set value = transaction[column] %}
                     <td>{{ '' if (value != value or value is none or value == '' or value == 'nan') else value }}</td>

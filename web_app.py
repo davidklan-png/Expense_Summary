@@ -277,12 +277,14 @@ def generate_report(file_data: dict) -> str:
     # Convert string columns back to appropriate types for report generation
     report_df = file_data["df"].copy()
 
-    # Convert numeric columns (amount/利用金額 and count/人数) back to numeric types
-    numeric_columns = ["利用金額", "人数"]
-    for col in numeric_columns:
-        if col in report_df.columns:
-            # Convert to numeric, coerce errors to NaN
-            report_df[col] = pd.to_numeric(report_df[col], errors="coerce")
+    # Convert numeric columns back to appropriate types
+    if "利用金額" in report_df.columns:
+        # Convert to numeric, coerce errors to NaN
+        report_df["利用金額"] = pd.to_numeric(report_df["利用金額"], errors="coerce")
+
+    if "人数" in report_df.columns:
+        # Convert to integer, coerce errors to NaN
+        report_df["人数"] = pd.to_numeric(report_df["人数"], errors="coerce").astype("Int64")
 
     # Generate HTML report to temp file
     output_path = generate_html_report(
