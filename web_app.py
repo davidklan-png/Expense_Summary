@@ -217,14 +217,30 @@ def render_editor(filename: str):
         # Show only rows with attendee data (filter out empty and 'nan' strings)
         display_df = df[(df["人数"] != "") & (df["人数"] != "nan")]
 
-    # Use data_editor for editable DataFrame
+    # Use data_editor for editable DataFrame with disabled columns for auto-calculated fields
+    column_config = {
+        "人数": st.column_config.NumberColumn(
+            "人数",
+            help="Auto-calculated from ID columns",
+            disabled=True,
+        )
+    }
+
     edited_df = st.data_editor(
         display_df,
         use_container_width=True,
         height=400,
         num_rows="dynamic",  # Allow adding/deleting rows
         key=f"editor_{filename}",
+        column_config=column_config,
     )
+
+    # Calculate 人数 based on non-empty ID columns
+    id_columns = [f"ID{i}" for i in range(1, 9)]
+    for idx in edited_df.index:
+        # Count non-empty ID values
+        count = sum(1 for col in id_columns if col in edited_df.columns and edited_df.loc[idx, col] not in ["", "nan", None])
+        edited_df.loc[idx, "人数"] = str(count) if count > 0 else ""
 
     # Update the session state with edited data if changes were made
     if not edited_df.equals(display_df):
@@ -235,7 +251,13 @@ def render_editor(filename: str):
             # Update only the edited rows in the full dataframe
             df.update(edited_df)
             st.session_state.processed_files[filename]["df"] = df.copy()
-        st.success("✅ Changes saved!")
+
+        # Recalculate unique attendees
+        st.session_state.processed_files[filename]["unique_attendees"] = get_unique_attendees(
+            st.session_state.processed_files[filename]["df"],
+            st.session_state.attendee_ref
+        )
+        st.rerun()
 
     # Unique attendees list
     if unique_attendees is not None and len(unique_attendees) > 0:
