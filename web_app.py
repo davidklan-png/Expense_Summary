@@ -311,8 +311,8 @@ def main():
         else:
             st.warning("⚠️ No attendee list loaded")
 
-        # Reference data settings
-        with st.expander("📂 Reference Data", expanded=False):
+        # Attendee List settings
+        with st.expander("📂 Attendee List", expanded=False):
             reference_dir = st.text_input(
                 "Reference Directory",
                 value=str(Path("data/reference")),
@@ -332,6 +332,19 @@ def main():
                         st.error("❌ NameList.csv not found")
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
+
+        # Display attendee list reference
+        if st.session_state.attendee_ref is not None:
+            st.markdown("---")
+            st.subheader("👥 Attendee Reference")
+            # Display only ID and Name columns
+            attendee_display = st.session_state.attendee_ref[["ID", "Name"]].copy()
+            st.dataframe(
+                attendee_display,
+                use_container_width=True,
+                hide_index=True,
+                height=400
+            )
 
     # Main content - vertical workflow
     # Step 1: Upload
