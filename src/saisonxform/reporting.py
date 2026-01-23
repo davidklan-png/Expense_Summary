@@ -75,9 +75,16 @@ def prepare_report_context(
     # Get unique attendees
     unique_attendees = get_unique_attendees(transactions, attendee_reference)
 
+    # Convert Int64 columns to object type to allow fillna with empty string
+    transactions_copy = transactions.copy()
+    for col in transactions_copy.columns:
+        # Check for nullable integer types (Int8, Int16, Int32, Int64)
+        if isinstance(transactions_copy[col].dtype, pd.Int64Dtype):
+            transactions_copy[col] = transactions_copy[col].astype(float).astype(object)
+
     # Replace NaN values with empty string before converting to dict
     # This prevents Jinja2 from rendering them as "nan"
-    transactions_clean = transactions.fillna("")
+    transactions_clean = transactions_copy.fillna("")
     attendees_clean = unique_attendees.fillna("")
 
     # Convert DataFrames to list of dicts for template

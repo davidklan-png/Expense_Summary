@@ -162,7 +162,7 @@
                     {% elif column == '人数' %}
                     {% set value = transaction[column] %}
                     {% if value and value != '' and value != 'nan' and value is not none %}
-                    <td>{{ "{:.0f}".format(value|float) if value|string|replace('.','',1).isdigit() else value }}</td>
+                    <td>{{ value|int }}</td>
                     {% else %}
                     <td></td>
                     {% endif %}
