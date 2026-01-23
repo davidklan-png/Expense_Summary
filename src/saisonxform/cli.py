@@ -14,6 +14,9 @@ import typer
 
 from .config import Config
 
+# Default number of latest months to process when not specified
+DEFAULT_LATEST_MONTHS = 2
+
 
 def is_inside_git_repo(path: Path) -> bool:
     """Check if a path is inside a git repository.
@@ -34,7 +37,7 @@ def is_inside_git_repo(path: Path) -> bool:
             check=False,
         )
         return result.returncode == 0 and result.stdout.strip() == "true"
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         return False
 
 
@@ -194,10 +197,12 @@ def run(
     # Month filtering logic
     months_to_process = month  # User-specified months via --month flag
     if not months_to_process:
-        # Default: process latest 2 months
-        months_to_process = get_latest_months(config.input_dir, n=2)
+        # Default: process latest N months
+        months_to_process = get_latest_months(config.input_dir, n=DEFAULT_LATEST_MONTHS)
         if months_to_process and verbose:
-            typer.echo(f"No --month specified, defaulting to latest 2 months: {', '.join(months_to_process)}\n")
+            typer.echo(
+                f"No --month specified, defaulting to latest {DEFAULT_LATEST_MONTHS} months: {', '.join(months_to_process)}\n"
+            )
         elif not months_to_process:
             # No files with month prefixes found, process all files
             if verbose:
@@ -333,8 +338,12 @@ def run(
                         id_1_weight=id_1_weight,
                         return_dict=True,
                     )
-                    # Type assertion: return_dict=True guarantees dict return
-                    assert isinstance(ids_result, dict)
+                    # Type check: return_dict=True guarantees dict return
+                    if not isinstance(ids_result, dict):
+                        raise TypeError(
+                            f"Expected dict from sample_attendee_ids with return_dict=True, "
+                            f"got {type(ids_result).__name__}"
+                        )
                     for i in range(1, 9):
                         col_name = f"ID{i}"
                         df.loc[idx, col_name] = ids_result[col_name]
@@ -390,8 +399,10 @@ def run(
             processed_count += 1
             typer.echo("  ✓ SUCCESS")
 
-        except Exception as e:
-            typer.echo(f"  ✗ ERROR: {e}")
+        except (ValueError, KeyError, pd.errors.ParserError, OSError) as e:
+            typer.echo(f"  ✗ ERROR processing {csv_file.name}: {e}")
+            typer.echo(f"     File path: {csv_file}")
+            typer.echo(f"     Step: CSV reading/processing")
             error_count += 1
 
             # Track processing failure for retry marker

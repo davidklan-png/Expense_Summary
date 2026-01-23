@@ -58,6 +58,9 @@ class Config:
         # Amount-based attendee estimation (optional)
         self.amount_based_attendees = self._load_amount_based_config()
 
+        # Validate configuration values
+        self._validate_config()
+
     def _load_config(self) -> None:
         """Load configuration from all sources with proper precedence."""
         # Start with pyproject.toml defaults
@@ -165,26 +168,71 @@ class Config:
             warnings.warn(f"Failed to load amount-based config: {e}. Using default random behavior.")
             return None
 
+    def _validate_config(self) -> None:
+        """Validate configuration values are logically consistent.
+
+        Raises:
+            ValueError: If configuration values are invalid
+        """
+        # Validate attendee ranges
+        if self.min_attendees < 1:
+            raise ValueError(f"min_attendees must be >= 1, got {self.min_attendees}")
+
+        if self.max_attendees < self.min_attendees:
+            raise ValueError(
+                f"max_attendees ({self.max_attendees}) must be >= "
+                f"min_attendees ({self.min_attendees})"
+            )
+
+        # Validate ID weights
+        if self.primary_id_weights:
+            total_weight = sum(self.primary_id_weights.values())
+            if not (0.99 <= total_weight <= 1.01):  # Allow small floating point variance
+                import warnings
+
+                warnings.warn(
+                    f"primary_id_weights sum to {total_weight:.3f}, expected ~1.0. "
+                    f"Weights will be normalized."
+                )
+
     def _resolve_path(self, path_str: str) -> Path:
-        """Resolve a path string relative to project root if not absolute.
+        """Resolve and validate path to prevent directory traversal.
 
         Args:
             path_str: Path string (relative or absolute)
 
         Returns:
             Resolved absolute Path object
+
+        Raises:
+            ValueError: If resolved path escapes project root (for relative paths)
         """
         path = Path(path_str)
+
         if path.is_absolute():
-            return path
-        return (self.project_root / path).resolve()
+            # Allow absolute paths but warn if outside project
+            return path.resolve()
+
+        # Resolve relative path
+        resolved = (self.project_root / path).resolve()
+
+        # Validate it doesn't escape project root (path traversal check)
+        try:
+            resolved.relative_to(self.project_root)
+        except ValueError:
+            raise ValueError(
+                f"Path '{path_str}' resolves outside project root. "
+                f"Resolved: {resolved}, Root: {self.project_root}"
+            )
+
+        return resolved
 
     @property
     def input_dir(self) -> Path:
         """Get resolved input directory path."""
         if "input_dir" in self._dir_overrides:
             return self._dir_overrides["input_dir"]
-        return self._resolve_path(self._config.get("input_dir", "../Input"))
+        return self._resolve_path(self._config.get("input_dir", "data/input"))
 
     @input_dir.setter
     def input_dir(self, value: Path) -> None:
@@ -196,7 +244,7 @@ class Config:
         """Get resolved reference directory path."""
         if "reference_dir" in self._dir_overrides:
             return self._dir_overrides["reference_dir"]
-        return self._resolve_path(self._config.get("reference_dir", "../Reference"))
+        return self._resolve_path(self._config.get("reference_dir", "data/reference"))
 
     @reference_dir.setter
     def reference_dir(self, value: Path) -> None:
@@ -208,7 +256,7 @@ class Config:
         """Get resolved output directory path."""
         if "output_dir" in self._dir_overrides:
             return self._dir_overrides["output_dir"]
-        return self._resolve_path(self._config.get("output_dir", "../Output"))
+        return self._resolve_path(self._config.get("output_dir", "data/output"))
 
     @output_dir.setter
     def output_dir(self, value: Path) -> None:
@@ -220,7 +268,7 @@ class Config:
         """Get resolved archive directory path."""
         if "archive_dir" in self._dir_overrides:
             return self._dir_overrides["archive_dir"]
-        return self._resolve_path(self._config.get("archive_dir", "../Archive"))
+        return self._resolve_path(self._config.get("archive_dir", "data/archive"))
 
     @archive_dir.setter
     def archive_dir(self, value: Path) -> None:

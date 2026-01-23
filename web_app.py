@@ -7,8 +7,9 @@ Interactive web application with vertical scroll-based workflow:
 """
 
 import sys
+import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 import streamlit as st
@@ -39,7 +40,7 @@ st.set_page_config(
 st.markdown(get_workflow_styles(), unsafe_allow_html=True)
 
 
-def initialize_session_state():
+def initialize_session_state() -> None:
     """Initialize session state variables."""
     initialize_workflow_state()
 
@@ -66,7 +67,7 @@ def load_attendee_reference(reference_path: Path) -> Optional[pd.DataFrame]:
     return pd.read_csv(reference_path, encoding="utf-8")
 
 
-def process_file(filename: str, file_bytes: bytes) -> dict:
+def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
     """Process a single uploaded file.
 
     Args:
@@ -74,7 +75,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict:
         file_bytes: File content as bytes
 
     Returns:
-        Dictionary with processed data
+        Dictionary with keys: 'df', 'encoding', 'pre_header', 'unique_attendees'
     """
     # Get processing parameters from session state
     config = st.session_state.config
@@ -98,14 +99,17 @@ def process_file(filename: str, file_bytes: bytes) -> dict:
         id_2_weight = float(config.primary_id_weights.get("2", 0.9))
         id_1_weight = float(config.primary_id_weights.get("1", 0.1))
 
-    # Write to temp file
-    temp_path = Path(f"/tmp/{filename}")
-    with open(temp_path, "wb") as f:
-        f.write(file_bytes)
+    # Write to temp file securely
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as tmp_file:
+        tmp_file.write(file_bytes)
+        temp_path = Path(tmp_file.name)
 
-    # Process the file
-    df, encoding, pre_header_rows = read_csv_with_detection(temp_path)
-    temp_path.unlink()
+    try:
+        # Process the file
+        df, encoding, pre_header_rows = read_csv_with_detection(temp_path)
+    finally:
+        # Guaranteed cleanup
+        temp_path.unlink(missing_ok=True)
 
     if df.empty:
         raise ValueError("File is empty")
@@ -156,7 +160,11 @@ def process_file(filename: str, file_bytes: bytes) -> dict:
                 id_1_weight=id_1_weight,
                 return_dict=True,
             )
-            assert isinstance(ids_result, dict)
+            if not isinstance(ids_result, dict):
+                raise TypeError(
+                    f"Expected dict from sample_attendee_ids with return_dict=True, "
+                    f"got {type(ids_result).__name__}"
+                )
             for i in range(1, 9):
                 col_name = f"ID{i}"
                 df.loc[idx, col_name] = ids_result[col_name]
@@ -180,7 +188,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict:
     }
 
 
-def render_editor(filename: str):
+def render_editor(filename: str) -> None:
     """Render the editor interface for a file."""
     if filename not in st.session_state.processed_files:
         st.error("File data not found")
@@ -283,8 +291,12 @@ def generate_report(file_data: dict) -> str:
         report_df["利用金額"] = pd.to_numeric(report_df["利用金額"], errors="coerce")
 
     if "人数" in report_df.columns:
-        # Convert to integer, coerce errors to NaN
-        report_df["人数"] = pd.to_numeric(report_df["人数"], errors="coerce").astype("Int64")
+        # Convert to integer, filling NaN with 0 for consistent type
+        report_df["人数"] = (
+            pd.to_numeric(report_df["人数"], errors="coerce")
+            .fillna(0)
+            .astype(int)
+        )
 
     # Generate HTML report to temp file
     output_path = generate_html_report(
@@ -304,7 +316,7 @@ def generate_report(file_data: dict) -> str:
     return html_content
 
 
-def main():
+def main() -> None:
     """Main application entry point."""
     initialize_session_state()
 
@@ -317,7 +329,8 @@ def main():
                 if attendee_ref is not None:
                     st.session_state.attendee_ref = attendee_ref
                     st.session_state.attendee_ref_path = ref_path
-        except Exception:
+        except (FileNotFoundError, PermissionError, ValueError):
+            # Reference file not found or unreadable - user can upload manually
             pass
 
     # Render sticky header

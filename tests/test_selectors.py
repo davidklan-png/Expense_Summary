@@ -60,24 +60,36 @@ class TestAttendeeEstimation:
 
     def test_estimate_within_bounds(self):
         """Should return count between min and max."""
+        import random
+        random.seed(42)  # Make test deterministic
+
         for _ in range(20):  # Test randomness with multiple runs
             count = estimate_attendee_count(amount=10000, min_attendees=2, max_attendees=8)
             assert 2 <= count <= 8
 
     def test_estimate_respects_minimum(self):
         """Should never return less than minimum."""
+        import random
+        random.seed(42)  # Make test deterministic
+
         for _ in range(20):
             count = estimate_attendee_count(amount=100, min_attendees=3, max_attendees=5)
             assert count >= 3
 
     def test_estimate_respects_maximum(self):
         """Should never return more than maximum."""
+        import random
+        random.seed(42)  # Make test deterministic
+
         for _ in range(20):
             count = estimate_attendee_count(amount=100000, min_attendees=2, max_attendees=6)
             assert count <= 6
 
     def test_estimate_default_range(self):
         """Should use default range 2-8 when not specified."""
+        import random
+        random.seed(42)  # Make test deterministic
+
         count = estimate_attendee_count(amount=5000)
         assert 2 <= count <= 8
 
@@ -87,6 +99,9 @@ class TestAttendeeIDSampling:
 
     def test_sample_includes_weighted_primary_ids(self):
         """Should include ID '2' (90% weight) or ID '1' (10% weight) as primary."""
+        import random
+        random.seed(42)  # Make test deterministic
+
         available_ids = ["1", "2", "3", "4", "5"]
 
         # Run multiple times to check distribution

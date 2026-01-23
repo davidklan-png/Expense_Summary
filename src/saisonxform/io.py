@@ -20,6 +20,29 @@ ENCODING_FALLBACKS = ["utf-8-sig", "utf-8", "cp932"]
 # Confidence threshold for chardet
 CHARDET_CONFIDENCE_THRESHOLD = 0.6
 
+# Maximum rows to scan for header detection
+MAX_HEADER_SCAN_ROWS = 20
+
+# Characters that indicate Excel formula injection (prefix to CSV cells)
+FORMULA_INJECTION_PREFIXES = ('=', '+', '-', '@', '\t', '\r')
+
+# Maximum bytes to read for encoding detection (10KB is sufficient)
+MAX_ENCODING_DETECTION_BYTES = 10240
+
+
+def _escape_csv_formulas(value: str) -> str:
+    """Escape potential CSV formula injection.
+
+    Args:
+        value: Cell value to escape
+
+    Returns:
+        Escaped value safe for CSV export
+    """
+    if isinstance(value, str) and value.startswith(FORMULA_INJECTION_PREFIXES):
+        return "'" + value  # Prefix with single quote to escape
+    return value
+
 
 def detect_encoding(file_path: Path) -> str:
     """
@@ -38,7 +61,7 @@ def detect_encoding(file_path: Path) -> str:
     """
     try:
         with open(file_path, "rb") as f:
-            raw_data = f.read()
+            raw_data = f.read(MAX_ENCODING_DETECTION_BYTES)
 
         # Try chardet detection
         result = chardet.detect(raw_data)
@@ -51,7 +74,7 @@ def detect_encoding(file_path: Path) -> str:
         # Low confidence or no detection - use fallback
         warnings.warn(f"Low confidence ({confidence:.2f}) for {file_path.name}, " f"using fallback encoding chain")
 
-    except Exception as e:
+    except (OSError, UnicodeError) as e:
         warnings.warn(f"chardet failed for {file_path.name}: {e}, using fallback")
 
     # Return first fallback
@@ -83,7 +106,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
             try:
                 with open(file_path, encoding=enc) as f:
                     for idx, line in enumerate(f):
-                        if idx >= 20:  # Only scan first 20 rows
+                        if idx >= MAX_HEADER_SCAN_ROWS:
                             break
 
                         # Check if this line contains all required columns (or their aliases)
@@ -107,7 +130,7 @@ def find_header_row(file_path: Path, encoding: Optional[str] = None) -> Optional
         # All encodings failed
         return None
 
-    except Exception:
+    except (OSError, UnicodeError):
         return None
 
 
@@ -205,6 +228,8 @@ def write_csv_utf8_bom(
     """
     Write DataFrame to CSV with UTF-8 BOM encoding, optionally including pre-header rows.
 
+    Escapes potential formula injection in all string cells.
+
     Args:
         df: DataFrame to write
         file_path: Output file path
@@ -226,6 +251,14 @@ def write_csv_utf8_bom(
                 break
             counter += 1
 
+    # Escape formulas in all string columns
+    df_escaped = df.copy()
+    for col in df_escaped.columns:
+        if df_escaped[col].dtype == object:  # String columns
+            df_escaped[col] = df_escaped[col].apply(
+                lambda x: _escape_csv_formulas(x) if isinstance(x, str) else x
+            )
+
     # Write with UTF-8 BOM
     if pre_header_rows:
         # Write pre-header rows first, then the DataFrame
@@ -234,9 +267,9 @@ def write_csv_utf8_bom(
             for line in pre_header_rows:
                 f.write(line)
             # Write DataFrame CSV content
-            df.to_csv(f, index=False)
+            df_escaped.to_csv(f, index=False)
     else:
         # No pre-header rows, write DataFrame directly
-        df.to_csv(output_path, index=False, encoding="utf-8-sig")
+        df_escaped.to_csv(output_path, index=False, encoding="utf-8-sig")
 
     return output_path

@@ -1,8 +1,19 @@
 """Attendee estimation and ID selection logic."""
 import random
-from typing import Union
 
 import pandas as pd
+
+
+def _numeric_sort_key(id_value: str) -> int | float:
+    """Convert ID to numeric sort key, placing non-numeric IDs at end.
+
+    Args:
+        id_value: ID string value
+
+    Returns:
+        Integer value for numeric IDs, infinity for non-numeric
+    """
+    return int(id_value) if id_value.isdigit() else float("inf")
 
 
 def filter_relevant_transactions(df: pd.DataFrame) -> pd.DataFrame:
@@ -71,7 +82,7 @@ def sample_attendee_ids(
     id_2_weight: float = 0.9,
     id_1_weight: float = 0.1,
     return_dict: bool = False,
-) -> Union[list[str], dict[str, str]]:
+) -> list[str] | dict[str, str]:
     """
     Sample attendee IDs with weighted primary selection.
 
@@ -132,7 +143,7 @@ def sample_attendee_ids(
             selected_ids = random.sample(available_ids, sample_count) if sample_count > 0 else []
 
     # Step 3: Sort numerically
-    selected_ids.sort(key=lambda x: int(x) if x.isdigit() else float("inf"))
+    selected_ids.sort(key=_numeric_sort_key)
 
     # Step 4: Pad to 8 slots
     padded_ids = selected_ids + [""] * (8 - len(selected_ids))

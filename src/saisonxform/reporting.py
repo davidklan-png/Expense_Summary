@@ -6,6 +6,18 @@ import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
+def _numeric_sort_key(id_value: str) -> int | float:
+    """Convert ID to numeric sort key, placing non-numeric IDs at end.
+
+    Args:
+        id_value: ID string value
+
+    Returns:
+        Integer value for numeric IDs, infinity for non-numeric
+    """
+    return int(id_value) if id_value.isdigit() else float("inf")
+
+
 def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.DataFrame) -> pd.DataFrame:
     """
     Extract unique attendee IDs from transactions and join with reference data.
@@ -48,7 +60,7 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
     result = unique_df.merge(attendee_ref_copy[["ID", "Name", "Title", "Company"]], on="ID", how="left")
 
     # Sort by ID numerically
-    result["_sort_key"] = result["ID"].apply(lambda x: int(x) if x.isdigit() else float("inf"))
+    result["_sort_key"] = result["ID"].apply(_numeric_sort_key)
     result = result.sort_values("_sort_key").drop("_sort_key", axis=1)
 
     return result.reset_index(drop=True)
@@ -77,10 +89,11 @@ def prepare_report_context(
 
     # Convert Int64 columns to object type to allow fillna with empty string
     transactions_copy = transactions.copy()
-    for col in transactions_copy.columns:
-        # Check for nullable integer types (Int8, Int16, Int32, Int64)
-        if isinstance(transactions_copy[col].dtype, pd.Int64Dtype):
-            transactions_copy[col] = transactions_copy[col].astype(float).astype(object)
+    # Use select_dtypes for efficient column selection
+    int64_cols = transactions_copy.select_dtypes(include=["Int64", "Int32", "Int16", "Int8"]).columns
+    for col in int64_cols:
+        # Direct conversion to object (avoid intermediate float)
+        transactions_copy[col] = transactions_copy[col].astype(object)
 
     # Replace NaN values with empty string before converting to dict
     # This prevents Jinja2 from rendering them as "nan"
