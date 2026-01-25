@@ -203,11 +203,11 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
 
 def render_editor(filename: str) -> None:
     """Render the editor interface for a file."""
-    if filename not in st.session_state.processed_files:
+    if filename not in st.session_state["processed_files"]:
         st.error("File data not found")
         return
 
-    file_data = st.session_state.processed_files[filename]
+    file_data = st.session_state["processed_files"][filename]
     df = file_data["df"].copy()
 
     # Convert all columns to strings for consistent editing, handling NaN values
@@ -267,15 +267,15 @@ def render_editor(filename: str) -> None:
     if not edited_df.equals(display_df):
         # Merge changes back into full dataframe
         if show_all:
-            st.session_state.processed_files[filename]["df"] = edited_df.copy()
+            st.session_state["processed_files"][filename]["df"] = edited_df.copy()
         else:
             # Update only the edited rows in the full dataframe
             df.update(edited_df)
-            st.session_state.processed_files[filename]["df"] = df.copy()
+            st.session_state["processed_files"][filename]["df"] = df.copy()
 
         # Recalculate unique attendees
-        st.session_state.processed_files[filename]["unique_attendees"] = get_unique_attendees(
-            st.session_state.processed_files[filename]["df"],
+        st.session_state["processed_files"][filename]["unique_attendees"] = get_unique_attendees(
+            st.session_state["processed_files"][filename]["df"],
             st.session_state["attendee_ref"]
         )
         st.rerun()
