@@ -53,6 +53,11 @@ class Config:
         # Processing configuration (Phase 5)
         self.min_attendees = self._config.get("min_attendees", 2)
         self.max_attendees = self._config.get("max_attendees", 8)
+
+        # Core member configuration (replaces primary_id_weights)
+        self.core_fill_strategy = self._config.get("core_fill_strategy", "random")
+
+        # Legacy: Primary ID weights (deprecated - use Core column in NameList.csv instead)
         self.primary_id_weights = self._config.get("primary_id_weights", {"2": 0.9, "1": 0.1})
 
         # Amount-based attendee estimation (optional)
@@ -184,7 +189,26 @@ class Config:
                 f"min_attendees ({self.min_attendees})"
             )
 
-        # Validate ID weights
+        # Validate core_fill_strategy
+        valid_strategies = {"random", "sequential"}
+        if self.core_fill_strategy not in valid_strategies:
+            raise ValueError(
+                f"core_fill_strategy must be one of {valid_strategies}, "
+                f"got '{self.core_fill_strategy}'"
+            )
+
+        # Deprecation warning for primary_id_weights
+        if self.primary_id_weights and any(self.primary_id_weights.values()):
+            import warnings
+
+            warnings.warn(
+                "primary_id_weights is deprecated. Use the Core column in NameList.csv instead. "
+                "The Core column allows you to designate which members should be prioritized.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        # Validate ID weights (legacy only)
         if self.primary_id_weights:
             total_weight = sum(self.primary_id_weights.values())
             if not (0.99 <= total_weight <= 1.01):  # Allow small floating point variance

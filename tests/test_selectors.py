@@ -313,3 +313,152 @@ class TestAmountBasedEstimation:
 
         count_next = estimate_attendee_count(amount=5001, amount_brackets=brackets)
         assert 3 <= count_next <= 5
+
+
+class TestHybridCoreMemberSelection:
+    """Test hybrid weighted-primary + core-member filling algorithm."""
+
+    def test_weighted_primary_then_core_filling(self):
+        """Should select primary using weights (90% ID '2'), then fill from core."""
+        import random
+        random.seed(42)  # Make test deterministic
+
+        available_ids = ["1", "2", "3", "4", "5", "6"]
+        core_ids = ["3", "4", "5", "6"]
+
+        # Request 4 attendees: 1 weighted primary + 3 from core
+        ids = sample_attendee_ids(count=4, available_ids=available_ids, core_ids=core_ids)
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 4
+        # First ID should be from weighted selection (1 or 2)
+        assert non_empty[0] in ["1", "2"]
+        # Remaining should be from core (excluding primary if it's core)
+        remaining = non_empty[1:]
+        assert all(id_str in core_ids for id_str in remaining if id_str not in ["1", "2"])
+
+    def test_weighted_primary_is_id2_90_percent(self):
+        """Should select ID '2' as primary ~90% of the time."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4"]
+        core_ids = ["3", "4"]
+
+        id_2_as_primary = 0
+        trials = 100
+
+        for _ in range(trials):
+            ids = sample_attendee_ids(count=2, available_ids=available_ids, core_ids=core_ids)
+            non_empty = [id_str for id_str in ids if id_str]
+            if non_empty and non_empty[0] == "2":
+                id_2_as_primary += 1
+
+        # ID '2' should be primary ~90% of the time
+        assert id_2_as_primary >= 80  # Allow some variance
+
+    def test_core_exhaustion_uses_non_core(self):
+        """Should use non-core members when core exhausted."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5", "6", "7", "8"]
+        core_ids = ["3", "4"]  # Only 2 core members
+
+        # Request 5 attendees: 1 weighted primary + 1 core + 3 non-core
+        ids = sample_attendee_ids(count=5, available_ids=available_ids, core_ids=core_ids)
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 5
+
+    def test_sequential_core_filling(self):
+        """Should use core members in ID order when sequential strategy."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5", "6", "7", "8"]
+        core_ids = ["3", "4", "5", "6", "7"]
+
+        ids = sample_attendee_ids(
+            count=4, available_ids=available_ids, core_ids=core_ids, core_fill_strategy="sequential"
+        )
+
+        non_empty = [id_str for id_str in ids if id_str]
+        # First ID is from weighted (1 or 2)
+        # Remaining 3 from core in sequential order
+        remaining = non_empty[1:]
+        assert remaining == sorted(remaining, key=int)
+
+    def test_no_core_ids_uses_legacy_filling(self):
+        """Should use legacy random filling when core_ids is None."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5"]
+
+        ids = sample_attendee_ids(count=3, available_ids=available_ids, core_ids=None)
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 3
+
+    def test_empty_core_ids_uses_legacy_filling(self):
+        """Should use legacy random filling when core_ids is empty."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5"]
+
+        ids = sample_attendee_ids(count=3, available_ids=available_ids, core_ids=[])
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 3
+
+    def test_dict_output_with_core_members(self):
+        """Should return dict format with hybrid selection."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5"]
+        core_ids = ["3", "4", "5"]
+
+        result = sample_attendee_ids(
+            count=3, available_ids=available_ids, core_ids=core_ids, return_dict=True
+        )
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {f"ID{i}" for i in range(1, 9)}
+        # Check that we have 3 populated IDs
+        populated = [v for v in result.values() if v]
+        assert len(populated) == 3
+
+    def test_backward_compatibility_without_core_ids(self):
+        """Should work exactly as before when core_ids not provided."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5"]
+
+        # Call without core_ids parameter (backward compatible)
+        ids = sample_attendee_ids(
+            count=3, available_ids=available_ids, id_2_weight=0.9, id_1_weight=0.1
+        )
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 3
+        # First ID should be weighted (1 or 2)
+        assert non_empty[0] in ["1", "2"]
+
+    def test_primary_id_excluded_from_core_selection(self):
+        """Should not include primary ID in core selection (avoid duplicates)."""
+        import random
+        random.seed(42)
+
+        available_ids = ["1", "2", "3", "4", "5"]
+        core_ids = ["1", "2", "3"]  # Core includes the weighted IDs
+
+        ids = sample_attendee_ids(count=4, available_ids=available_ids, core_ids=core_ids)
+
+        non_empty = [id_str for id_str in ids if id_str]
+        assert len(non_empty) == 4
+        # No duplicates allowed
+        assert len(non_empty) == len(set(non_empty))

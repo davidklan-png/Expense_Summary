@@ -1,4 +1,4 @@
-# Saison Transform Configuration Example
+# Saison Transform Configuration
 # Copy this file to config.toml and adjust paths as needed
 
 [paths]
@@ -15,22 +15,21 @@ archive_dir = "data/archive"
 min_attendees = 2
 max_attendees = 8
 
-# Primary ID selection weights (must sum to 1.0)
-# Default: 90% probability for ID '2', 10% for ID '1'
-# The primary ID is selected first, then remaining slots filled randomly
-[processing.primary_id_weights]
-"2" = 0.9  # 90% chance
-"1" = 0.1  # 10% chance
+# Core member fill strategy
+# Controls how core members (Core=1 in NameList.csv) are selected for attendee slots
+# - "random" (default): Randomly select from core members
+# - "sequential": Use core members in ID order
+core_fill_strategy = "random"
 
-# Alternative: Equal weights for IDs '1' and '2'
+# ============================================================================
+# DEPRECATED: Use Core column in NameList.csv instead
+# The Core column allows you to designate which members should be prioritized.
+# Core=1 members are selected first; Core=0 members are available during editing.
+# ============================================================================
+# Legacy: Primary ID selection weights (deprecated - use Core column instead)
 # [processing.primary_id_weights]
-# "1" = 0.5
-# "2" = 0.5
-
-# Alternative: Prefer ID '1' over ID '2'
-# [processing.primary_id_weights]
-# "1" = 0.7
-# "2" = 0.3
+# "2" = 0.9  # 90% chance
+# "1" = 0.1  # 10% chance
 
 # Amount-based attendee estimation
 # Controls how attendee counts are determined: by transaction amount or random

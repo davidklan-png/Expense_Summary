@@ -28,14 +28,14 @@ class TestIOEdgeCases:
                 pass
 
     def test_find_header_beyond_row_10(self, tmp_path):
-        """Should return None if header is beyond row 10."""
+        """Should return None if header is beyond MAX_HEADER_SCAN_ROWS (20)."""
         test_file = tmp_path / "late_header.csv"
-        lines = ["data"] * 11 + ["利用日,ご利用店名及び商品名,利用金額,備考"]
+        lines = ["data"] * 21 + ["利用日,ご利用店名及び商品名,利用金額,備考"]
         test_file.write_text("\n".join(lines), encoding="utf-8")
 
         header_idx = find_header_row(test_file)
 
-        # Should not find header beyond row 10
+        # Should not find header beyond MAX_HEADER_SCAN_ROWS (20)
         assert header_idx is None
 
     def test_find_header_all_encodings_fail(self, tmp_path):
@@ -267,8 +267,8 @@ class TestConfigEdgeCases:
         config = Config(project_root=tmp_path)
 
         # Should have default relative paths
-        assert config.input_dir.name == "Input"
-        assert config.output_dir.name == "Output"
+        assert config.input_dir.name == "input"
+        assert config.output_dir.name == "output"
 
     def test_config_with_explicit_config_file(self, tmp_path):
         """Should use explicitly provided config file."""

@@ -79,22 +79,32 @@ def estimate_attendee_count(
 def sample_attendee_ids(
     count: int,
     available_ids: list[str],
+    core_ids: list[str] | None = None,
+    core_fill_strategy: str = "random",
     id_2_weight: float = 0.9,
     id_1_weight: float = 0.1,
     return_dict: bool = False,
 ) -> list[str] | dict[str, str]:
-    """
-    Sample attendee IDs with weighted primary selection.
+    """Sample attendee IDs with hybrid weighted-primary and core-member filling.
 
-    Algorithm:
+    Hybrid Algorithm (when core_ids provided):
+    1. Select FIRST ID using weighted random (90% ID '2', 10% ID '1') - legacy behavior
+    2. Fill remaining slots from core members (excluding the primary ID)
+    3. If core members exhausted, fill from non-core available_ids
+    4. Sort IDs numerically
+    5. Pad to 8 slots with empty strings
+
+    Legacy Algorithm (when core_ids is None or empty):
     1. Select primary ID using weighted random (90% ID '2', 10% ID '1')
-    2. Fill remaining slots by sampling without replacement from available IDs
+    2. Fill remaining slots by sampling from all available IDs
     3. Sort IDs numerically
     4. Pad to 8 slots with empty strings
 
     Args:
         count: Number of attendees to select
-        available_ids: List of available attendee ID strings
+        available_ids: List of all available attendee ID strings
+        core_ids: Optional list of core member IDs (used after primary selection)
+        core_fill_strategy: "random" (default) or "sequential" for core selection
         id_2_weight: Probability weight for ID '2' (default: 0.9)
         id_1_weight: Probability weight for ID '1' (default: 0.1)
         return_dict: If True, return dict with ID1-ID8 keys; if False, return list
@@ -105,7 +115,7 @@ def sample_attendee_ids(
     if count <= 0:
         selected_ids = []
     else:
-        # Step 1: Select primary ID with weights
+        # Step 1: Select PRIMARY ID using weighted random (legacy behavior - 90% ID "2", 10% ID "1")
         primary_candidates = []
         weights = []
 
@@ -122,30 +132,55 @@ def sample_attendee_ids(
             total_weight = sum(weights)
             normalized_weights = [w / total_weight for w in weights]
 
-            # Weighted random choice
+            # Weighted random choice for FIRST ID
             primary_id = random.choices(primary_candidates, weights=normalized_weights, k=1)[0]
             selected_ids = [primary_id]
 
             # Step 2: Fill remaining slots
             remaining_count = count - 1
-            if remaining_count > 0:
-                # Remove primary ID from available pool
-                remaining_pool = [id_str for id_str in available_ids if id_str != primary_id]
 
-                # Sample without replacement
-                sample_count = min(remaining_count, len(remaining_pool))
-                if sample_count > 0:
-                    additional_ids = random.sample(remaining_pool, sample_count)
-                    selected_ids.extend(additional_ids)
+            if remaining_count > 0:
+                # Determine pool for remaining slots
+                if core_ids is not None and len(core_ids) > 0:
+                    # Hybrid Mode: Use core members for remaining slots
+                    valid_core_ids = [id_str for id_str in core_ids if id_str in available_ids and id_str != primary_id]
+
+                    if core_fill_strategy == "sequential":
+                        # Use core IDs in order
+                        selected_from_core = valid_core_ids[:remaining_count]
+                    else:
+                        # Random: Shuffle core IDs and take first `remaining_count`
+                        shuffled_core = valid_core_ids.copy()
+                        random.shuffle(shuffled_core)
+                        selected_from_core = shuffled_core[:remaining_count]
+
+                    # Add core members (excluding primary)
+                    selected_ids.extend(selected_from_core)
+
+                    # If still need more, use non-core members
+                    if len(selected_ids) < count:
+                        non_core_ids = [id_str for id_str in available_ids if id_str not in set(valid_core_ids) and id_str != primary_id]
+                        additional_needed = count - len(selected_ids)
+                        sample_count = min(additional_needed, len(non_core_ids))
+                        if sample_count > 0:
+                            additional_ids = random.sample(non_core_ids, sample_count)
+                            selected_ids.extend(additional_ids)
+                else:
+                    # Legacy Mode: No core members defined - sample from all remaining
+                    remaining_pool = [id_str for id_str in available_ids if id_str != primary_id]
+                    sample_count = min(remaining_count, len(remaining_pool))
+                    if sample_count > 0:
+                        additional_ids = random.sample(remaining_pool, sample_count)
+                        selected_ids.extend(additional_ids)
         else:
-            # No weighted IDs available, sample from all
+            # No weighted IDs ("1" or "2") available - sample from all
             sample_count = min(count, len(available_ids))
             selected_ids = random.sample(available_ids, sample_count) if sample_count > 0 else []
 
-    # Step 3: Sort numerically
+    # Sort numerically
     selected_ids.sort(key=_numeric_sort_key)
 
-    # Step 4: Pad to 8 slots
+    # Pad to 8 slots
     padded_ids = selected_ids + [""] * (8 - len(selected_ids))
     padded_ids = padded_ids[:8]  # Ensure exactly 8 elements
 

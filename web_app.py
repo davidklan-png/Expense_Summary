@@ -45,19 +45,19 @@ def initialize_session_state() -> None:
     initialize_workflow_state()
 
     if "attendee_ref" not in st.session_state:
-        st.session_state.attendee_ref = None
+        st.session_state["attendee_ref"] = None
     if "attendee_ref_path" not in st.session_state:
-        st.session_state.attendee_ref_path = None
+        st.session_state["attendee_ref_path"] = None
     if "config" not in st.session_state:
         config_path = Path("data/reference/config.toml")
         if config_path.exists():
-            st.session_state.config = Config(config_file=config_path)
+            st.session_state["config"] = Config(config_file=config_path)
         else:
-            st.session_state.config = Config()
+            st.session_state["config"] = Config()
     if "processed_files" not in st.session_state:
-        st.session_state.processed_files = {}
+        st.session_state["processed_files"] = {}
     if "uploaded_files_cache" not in st.session_state:
-        st.session_state.uploaded_files_cache = {}
+        st.session_state["uploaded_files_cache"] = {}
 
 
 def load_attendee_reference(reference_path: Path) -> Optional[pd.DataFrame]:
@@ -78,7 +78,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
         Dictionary with keys: 'df', 'encoding', 'pre_header', 'unique_attendees'
     """
     # Get processing parameters from session state
-    config = st.session_state.config
+    config = st.session_state["config"]
     min_attendees = config.min_attendees if config else 2
     max_attendees = config.max_attendees if config else 8
 
@@ -92,7 +92,12 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
         amount_brackets = config.amount_based_attendees.get("brackets")
         cost_per_person = config.amount_based_attendees.get("cost_per_person", 3000)
 
-    # ID weights
+    # Core member settings
+    core_fill_strategy = "random"
+    if config and config.core_fill_strategy:
+        core_fill_strategy = config.core_fill_strategy
+
+    # Legacy ID weights (deprecated - use Core column instead)
     id_2_weight = 0.9
     id_1_weight = 0.1
     if config and config.primary_id_weights:
@@ -115,11 +120,19 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
         raise ValueError("File is empty")
 
     # Get attendee reference
-    attendee_ref = st.session_state.attendee_ref
+    attendee_ref = st.session_state["attendee_ref"]
     if attendee_ref is None:
         raise ValueError("Attendee reference not loaded")
 
     available_ids = attendee_ref["ID"].astype(str).tolist()
+
+    # Extract core member IDs from NameList.csv (Core column = 1)
+    core_ids: list[str] | None = None
+    if "Core" in attendee_ref.columns:
+        core_ids = attendee_ref[attendee_ref["Core"] == 1]["ID"].astype(str).tolist()
+        if not core_ids:
+            # No core members defined - log warning and use all IDs
+            core_ids = None
 
     # Create mask for relevant transactions
     has_date = df["利用日"].notna() if "利用日" in df.columns else pd.Series([False] * len(df))
@@ -156,8 +169,8 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
             ids_result = sample_attendee_ids(
                 count=count,
                 available_ids=available_ids,
-                id_2_weight=id_2_weight,
-                id_1_weight=id_1_weight,
+                core_ids=core_ids,
+                core_fill_strategy=core_fill_strategy,
                 return_dict=True,
             )
             if not isinstance(ids_result, dict):
@@ -178,7 +191,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
         df["備考"] = ""
 
     # Get unique attendees
-    unique_attendees = get_unique_attendees(df, st.session_state.attendee_ref)
+    unique_attendees = get_unique_attendees(df, st.session_state["attendee_ref"])
 
     return {
         "df": df,
@@ -263,7 +276,7 @@ def render_editor(filename: str) -> None:
         # Recalculate unique attendees
         st.session_state.processed_files[filename]["unique_attendees"] = get_unique_attendees(
             st.session_state.processed_files[filename]["df"],
-            st.session_state.attendee_ref
+            st.session_state["attendee_ref"]
         )
         st.rerun()
 
@@ -301,7 +314,7 @@ def generate_report(file_data: dict) -> str:
     # Generate HTML report to temp file
     output_path = generate_html_report(
         transactions=report_df,
-        attendee_reference=st.session_state.attendee_ref,
+        attendee_reference=st.session_state["attendee_ref"],
         output_path=temp_output,
         source_filename="processed_data.csv",
         pre_header_rows=file_data.get("pre_header", []),
@@ -321,14 +334,14 @@ def main() -> None:
     initialize_session_state()
 
     # Auto-load attendee reference on first run
-    if st.session_state.attendee_ref is None:
+    if st.session_state["attendee_ref"] is None:
         try:
             ref_path = Path("data/reference/NameList.csv")
             if ref_path.exists():
                 attendee_ref = load_attendee_reference(ref_path)
                 if attendee_ref is not None:
-                    st.session_state.attendee_ref = attendee_ref
-                    st.session_state.attendee_ref_path = ref_path
+                    st.session_state["attendee_ref"] = attendee_ref
+                    st.session_state["attendee_ref_path"] = ref_path
         except (FileNotFoundError, PermissionError, ValueError):
             # Reference file not found or unreadable - user can upload manually
             pass
@@ -341,10 +354,10 @@ def main() -> None:
         st.header("⚙️ Settings")
 
         # Attendee list status
-        if st.session_state.attendee_ref is not None:
-            st.success(f"✅ {len(st.session_state.attendee_ref)} attendees loaded")
-            if st.session_state.attendee_ref_path:
-                st.caption(f"📄 {st.session_state.attendee_ref_path.name}")
+        if st.session_state["attendee_ref"] is not None:
+            st.success(f"✅ {len(st.session_state['attendee_ref'])} attendees loaded")
+            if st.session_state["attendee_ref_path"]:
+                st.caption(f"📄 {st.session_state['attendee_ref_path'].name}")
         else:
             st.warning("⚠️ No attendee list loaded")
 
@@ -361,8 +374,8 @@ def main() -> None:
                     ref_path = Path(reference_dir) / "NameList.csv"
                     attendee_ref = load_attendee_reference(ref_path)
                     if attendee_ref is not None:
-                        st.session_state.attendee_ref = attendee_ref
-                        st.session_state.attendee_ref_path = ref_path
+                        st.session_state["attendee_ref"] = attendee_ref
+                        st.session_state["attendee_ref_path"] = ref_path
                         st.success(f"✅ Loaded {len(attendee_ref)} attendees")
                         st.rerun()
                     else:
@@ -371,11 +384,27 @@ def main() -> None:
                     st.error(f"❌ Error: {e}")
 
         # Display attendee list reference
-        if st.session_state.attendee_ref is not None:
+        if st.session_state["attendee_ref"] is not None:
             st.markdown("---")
             st.subheader("👥 Attendee Reference")
-            # Display only ID and Name columns
-            attendee_display = st.session_state.attendee_ref[["ID", "Name"]].copy()
+
+            # Check if Core column exists and display accordingly
+            if "Core" in st.session_state["attendee_ref"].columns:
+                # Show core count
+                core_count = (st.session_state["attendee_ref"]["Core"] == 1).sum()
+                total_count = len(st.session_state["attendee_ref"])
+                st.caption(f"⭐ Core: {core_count} | All: {total_count}")
+
+                # Display ID, Name, and Core indicator
+                attendee_display = st.session_state["attendee_ref"][["ID", "Name", "Core"]].copy()
+                attendee_display["Core"] = attendee_display["Core"].apply(
+                    lambda x: "⭐" if x == 1 else ""
+                )
+                attendee_display.columns = ["ID", "Name", ""]
+            else:
+                # No Core column - show ID and Name only
+                attendee_display = st.session_state["attendee_ref"][["ID", "Name"]].copy()
+
             st.dataframe(
                 attendee_display,
                 use_container_width=True,
@@ -394,12 +423,12 @@ def main() -> None:
     render_download_step(generate_report)
 
     # Auto-scroll to current step
-    if "scroll_to_step" in st.session_state and st.session_state.scroll_to_step:
+    if "scroll_to_step" in st.session_state and st.session_state["scroll_to_step"]:
         st.markdown(
-            get_auto_scroll_script(st.session_state.scroll_to_step),
+            get_auto_scroll_script(st.session_state["scroll_to_step"]),
             unsafe_allow_html=True,
         )
-        st.session_state.scroll_to_step = None
+        st.session_state["scroll_to_step"] = None
 
 
 if __name__ == "__main__":

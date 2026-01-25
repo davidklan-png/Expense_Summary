@@ -7,7 +7,7 @@
 - **Language**: Python 3.10-3.13
 - **Package Manager**: Poetry
 - **Web UI**: Streamlit
-- **Testing**: pytest with 91% coverage target (131 tests)
+- **Testing**: pytest with 91% coverage target (145+ tests)
 
 ## Project Structure
 
@@ -21,11 +21,11 @@ saisonxform/
 │   ├── reporting.py           # HTML report generation
 │   └── month_utils.py         # Archival utilities
 ├── web_app.py                 # Streamlit web interface
-├── tests/                     # Test suite (1,395 lines)
+├── tests/                     # Test suite (145+ tests)
 ├── data/                      # Runtime data (NOT in git)
 │   ├── input/                # Uploaded CSV files (via web UI)
 │   ├── reference/             # Reference data (in git)
-│   │   ├── NameList.csv      # Attendee reference list
+│   │   ├── NameList.csv      # Attendee reference list (with Core column)
 │   │   └── config.toml       # Configuration parameters
 │   ├── output/               # Generated reports
 │   └── archive/              # Monthly archives (Archive/YYYYMM/)
@@ -70,10 +70,12 @@ poetry run bandit -r src
 - Auto-detection chain: UTF-8 BOM → UTF-8 → CP932/Shift-JIS
 - Output always UTF-8 with BOM
 
-### 3. Weighted ID Assignment
-- Primary ID selection with configurable weights (default: 90% ID '2', 10% ID '1')
-- Remaining IDs filled randomly without replacement
+### 3. Core Member ID Assignment (v0.4.0+)
+- **Core Members** (Core=1 in NameList.csv): Prioritized in attendee selection
+- **Non-Core Members** (Core=0): Available during manual editing
+- Core fill strategy: "random" (default) or "sequential"
 - Output padded to ID8, sorted numerically
+- **Legacy Mode**: Falls back to weighted ID assignment if no Core column
 
 ### 4. Configuration Precedence (highest to lowest)
 1. Environment variables
@@ -90,7 +92,7 @@ poetry run bandit -r src
 
 ### Testing
 - TDD/BDD approach required
-- 131 tests passing with 91% coverage target
+- 145+ tests passing with 91% coverage target
 - Test files mirror source structure
 - Fixtures load CSV slices for testing
 
@@ -113,3 +115,17 @@ poetry run bandit -r src
 - Web UI requires network access - configure WSL2 port forwarding if needed
 - Archived files protected from re-processing unless `--force` is used
 - Amount-based attendee estimation is configurable via config.toml brackets
+- Core members are designated in NameList.csv by setting Core=1
+
+## NameList.csv Schema (v0.4.0+)
+
+```csv
+ID,Company,Title,Name,Core
+1,Company A,Manager,John Doe,1
+2,Company B,Director,Jane Smith,1
+3,Company C,Assistant,Bob Jones,0
+```
+
+- **Core=1**: Core member (prioritized in random selection)
+- **Core=0**: Non-core member (available during editing only)
+

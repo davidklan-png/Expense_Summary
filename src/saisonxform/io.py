@@ -74,7 +74,7 @@ def detect_encoding(file_path: Path) -> str:
         # Low confidence or no detection - use fallback
         warnings.warn(f"Low confidence ({confidence:.2f}) for {file_path.name}, " f"using fallback encoding chain")
 
-    except (OSError, UnicodeError) as e:
+    except Exception as e:
         warnings.warn(f"chardet failed for {file_path.name}: {e}, using fallback")
 
     # Return first fallback
@@ -229,6 +229,7 @@ def write_csv_utf8_bom(
     Write DataFrame to CSV with UTF-8 BOM encoding, optionally including pre-header rows.
 
     Escapes potential formula injection in all string cells.
+    Explicitly excludes 'Core' column from output if present (internal use only).
 
     Args:
         df: DataFrame to write
@@ -241,6 +242,11 @@ def write_csv_utf8_bom(
     """
     output_path = Path(file_path)
 
+    # Explicitly exclude Core column from output (internal use only)
+    df_to_write = df.copy()
+    if "Core" in df_to_write.columns:
+        df_to_write = df_to_write.drop(columns=["Core"])
+
     # Handle duplicate filenames
     if handle_duplicates and output_path.exists():
         counter = 2
@@ -252,7 +258,7 @@ def write_csv_utf8_bom(
             counter += 1
 
     # Escape formulas in all string columns
-    df_escaped = df.copy()
+    df_escaped = df_to_write.copy()
     for col in df_escaped.columns:
         if df_escaped[col].dtype == object:  # String columns
             df_escaped[col] = df_escaped[col].apply(

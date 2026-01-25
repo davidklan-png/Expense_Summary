@@ -56,8 +56,12 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
     attendee_ref_copy = attendee_reference.copy()
     attendee_ref_copy["ID"] = attendee_ref_copy["ID"].astype(str)
 
-    # Join with reference data
-    result = unique_df.merge(attendee_ref_copy[["ID", "Name", "Title", "Company"]], on="ID", how="left")
+    # Join with reference data (explicitly exclude Core column from output)
+    reference_columns = ["ID", "Name", "Title", "Company"]
+    if "Core" in attendee_ref_copy.columns:
+        # Core column is used for selection logic but not included in output
+        attendee_ref_copy = attendee_ref_copy.drop(columns=["Core"])
+    result = unique_df.merge(attendee_ref_copy[reference_columns], on="ID", how="left")
 
     # Sort by ID numerically
     result["_sort_key"] = result["ID"].apply(_numeric_sort_key)
