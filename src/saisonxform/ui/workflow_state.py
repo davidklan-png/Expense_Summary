@@ -21,68 +21,68 @@ class WorkflowStep(Enum):
 def initialize_workflow_state():
     """Initialize workflow state in session state."""
     if "workflow_step" not in st.session_state:
-        st.session_state.workflow_step = WorkflowStep.UPLOAD
+        st.session_state["workflow_step"] = WorkflowStep.UPLOAD
 
     if "step_completed" not in st.session_state:
-        st.session_state.step_completed = {
+        st.session_state["step_completed"] = {
             WorkflowStep.UPLOAD: False,
             WorkflowStep.PROCESS_EDIT: False,
             WorkflowStep.DOWNLOAD: False,
         }
 
     if "scroll_to_step" not in st.session_state:
-        st.session_state.scroll_to_step = None
+        st.session_state["scroll_to_step"] = None
 
 
 def get_current_step() -> WorkflowStep:
     """Get current workflow step."""
-    return st.session_state.workflow_step
+    return st.session_state["workflow_step"]
 
 
 def set_current_step(step: WorkflowStep):
     """Set current workflow step."""
-    st.session_state.workflow_step = step
+    st.session_state["workflow_step"] = step
 
 
 def mark_step_complete(step: WorkflowStep):
     """Mark a step as completed."""
-    st.session_state.step_completed[step] = True
+    st.session_state["step_completed"][step] = True
 
 
 def is_step_complete(step: WorkflowStep) -> bool:
     """Check if a step is completed."""
-    return st.session_state.step_completed.get(step, False)
+    return st.session_state["step_completed"].get(step, False)
 
 
 def advance_to_next_step():
     """Advance to the next workflow step."""
-    current = st.session_state.workflow_step
+    current = st.session_state["workflow_step"]
 
     if current == WorkflowStep.UPLOAD:
         mark_step_complete(WorkflowStep.UPLOAD)
         set_current_step(WorkflowStep.PROCESS_EDIT)
-        st.session_state.scroll_to_step = "step-2"
+        st.session_state["scroll_to_step"] = "step-2"
     elif current == WorkflowStep.PROCESS_EDIT:
         mark_step_complete(WorkflowStep.PROCESS_EDIT)
         set_current_step(WorkflowStep.DOWNLOAD)
-        st.session_state.scroll_to_step = "step-3"
+        st.session_state["scroll_to_step"] = "step-3"
 
 
 def reset_workflow():
     """Reset workflow to initial state and clear all caches."""
-    st.session_state.workflow_step = WorkflowStep.UPLOAD
-    st.session_state.step_completed = {
+    st.session_state["workflow_step"] = WorkflowStep.UPLOAD
+    st.session_state["step_completed"] = {
         WorkflowStep.UPLOAD: False,
         WorkflowStep.PROCESS_EDIT: False,
         WorkflowStep.DOWNLOAD: False,
     }
-    st.session_state.scroll_to_step = "step-1"
+    st.session_state["scroll_to_step"] = "step-1"
 
     # Clear all file caches
     if "processed_files" in st.session_state:
-        st.session_state.processed_files = {}
+        st.session_state["processed_files"] = {}
     if "uploaded_files_cache" in st.session_state:
-        st.session_state.uploaded_files_cache = {}
+        st.session_state["uploaded_files_cache"] = {}
 
 
 def can_access_step(step: WorkflowStep) -> bool:
@@ -100,7 +100,7 @@ def get_step_status(step: WorkflowStep) -> str:
     """Get step status for display."""
     if is_step_complete(step):
         return get_text("steps.status_complete")
-    elif st.session_state.workflow_step == step:
+    elif st.session_state["workflow_step"] == step:
         return get_text("steps.status_in_progress")
     elif can_access_step(step):
         return get_text("steps.status_ready")

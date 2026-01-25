@@ -93,8 +93,8 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
 
                 if result:
                     if "processed_files" not in st.session_state:
-                        st.session_state.processed_files = {}
-                    st.session_state.processed_files[filename] = result
+                        st.session_state["processed_files"] = {}
+                    st.session_state["processed_files"][filename] = result
 
             except Exception as e:
                 st.error(get_text("process.error_processing", filename=filename, error=str(e)))

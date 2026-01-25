@@ -31,7 +31,7 @@ def render_upload_step():
     )
 
     # Check if attendee list is loaded
-    if st.session_state.attendee_ref is None:
+    if st.session_state["attendee_ref"] is None:
         st.error(get_text("upload.error_no_attendee"))
         return
 
@@ -51,11 +51,11 @@ def render_upload_step():
     # Store uploaded files in session state
     if uploaded_files:
         if "uploaded_files_cache" not in st.session_state:
-            st.session_state.uploaded_files_cache = {}
+            st.session_state["uploaded_files_cache"] = {}
 
         for uploaded_file in uploaded_files:
-            if uploaded_file.name not in st.session_state.uploaded_files_cache:
-                st.session_state.uploaded_files_cache[uploaded_file.name] = uploaded_file.getvalue()
+            if uploaded_file.name not in st.session_state["uploaded_files_cache"]:
+                st.session_state["uploaded_files_cache"][uploaded_file.name] = uploaded_file.getvalue()
 
         # Display uploaded files
         st.markdown("---")
@@ -89,11 +89,11 @@ def render_upload_step():
                 st.rerun()
 
     # Show cached files if uploader was cleared
-    elif "uploaded_files_cache" in st.session_state and st.session_state.uploaded_files_cache:
-        st.info(get_text("upload.files_cached", count=len(st.session_state.uploaded_files_cache)))
+    elif "uploaded_files_cache" in st.session_state and st.session_state["uploaded_files_cache"]:
+        st.info(get_text("upload.files_cached", count=len(st.session_state["uploaded_files_cache"])))
 
         if st.button(get_text("upload.clear_cached"), type="secondary"):
-            st.session_state.uploaded_files_cache = {}
+            st.session_state["uploaded_files_cache"] = {}
             st.rerun()
 
     # Section divider

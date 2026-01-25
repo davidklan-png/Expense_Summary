@@ -31,10 +31,10 @@ def render_sticky_header():
 
         with top_col2:
             # Language toggle button in upper-right
-            current_lang = st.session_state.lang
+            current_lang = st.session_state["lang"]
             current_lang_display = "🇯🇵 日本語" if current_lang == "en" else "🇺🇸 English"
             if st.button(current_lang_display, key="lang-toggle", use_container_width=True):
-                st.session_state.lang = "ja" if current_lang == "en" else "en"
+                st.session_state["lang"] = "ja" if current_lang == "en" else "en"
                 st.rerun()
 
         # Title and step indicator in columns

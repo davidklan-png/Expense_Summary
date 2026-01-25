@@ -162,11 +162,11 @@ def load_translations():
     This should be called once at app initialization.
     """
     if "translations" not in st.session_state:
-        st.session_state.translations = TRANSLATIONS
+        st.session_state["translations"] = TRANSLATIONS
 
     # Initialize language preference
     if "lang" not in st.session_state:
-        st.session_state.lang = "en"
+        st.session_state["lang"] = "en"
 
 
 def get_text(key_path: str, **kwargs) -> str:
