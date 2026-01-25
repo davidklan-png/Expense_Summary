@@ -6,7 +6,7 @@ File processing, preview, editing interface, and PDF generation.
 import streamlit as st
 import pandas as pd
 
-from ..reporting import generate_pdf_bytes
+from ..reporting import generate_html_bytes, generate_pdf_bytes
 from .translations import get_text
 from .workflow_state import WorkflowStep, can_access_step
 
@@ -153,7 +153,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             with st.expander(get_text("process.edit_file", filename=selected_file), expanded=True):
                 render_editor_callback(selected_file)
 
-        # PDF Generation section
+        # PDF/Report Generation section
         st.markdown("---")
 
         # PDF generation for single or multiple files
@@ -174,8 +174,8 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                         # Prepare DataFrame for PDF (convert strings back to numeric types)
                         pdf_df = _prepare_df_for_pdf(file_data["df"])
 
-                        # Generate PDF
-                        pdf_bytes = generate_pdf_bytes(
+                        # Generate PDF (falls back to HTML if system libraries missing)
+                        report_bytes, file_ext = generate_pdf_bytes(
                             transactions=pdf_df,
                             attendee_reference=st.session_state["attendee_ref"],
                             source_filename=filename,
@@ -183,25 +183,36 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                         )
 
                         # Prepare download filename
-                        pdf_filename = filename.replace(".csv", ".pdf")
+                        dl_filename = filename.replace(".csv", file_ext)
+
+                        # Determine MIME type and button label
+                        if file_ext == ".pdf":
+                            mime_type = "application/pdf"
+                            btn_label = "⬇️ Download PDF"
+                            success_msg = get_text("process.pdf_ready")
+                        else:
+                            mime_type = "text/html"
+                            btn_label = "⬇️ Download HTML (Print to PDF)"
+                            success_msg = "✅ HTML downloaded - Open in browser and use Ctrl+P to save as PDF"
 
                         # Trigger download
                         st.download_button(
-                            label="⬇️ Download PDF",
-                            data=pdf_bytes.getvalue(),
-                            file_name=pdf_filename,
-                            mime="application/pdf",
-                            key="download_pdf_button",
+                            label=btn_label,
+                            data=report_bytes.getvalue(),
+                            file_name=dl_filename,
+                            mime=mime_type,
+                            key="download_report_button",
                             width='stretch',
                         )
-                        st.success(get_text("process.pdf_ready"))
+                        st.success(success_msg)
 
                     except Exception as e:
                         st.error(get_text("process.pdf_error", error=str(e)))
+
         else:
-            # Multiple files - allow individual PDF downloads
-            st.markdown("### 📄 Generate PDF Reports")
-            st.caption("Click to generate and download PDF for each file")
+            # Multiple files - allow individual downloads
+            st.markdown("### 📄 Generate Reports")
+            st.caption("Click to generate and download report for each file")
 
             for filename in processed_files.keys():
                 col1, col2, col3 = st.columns([3, 2, 1])
@@ -217,21 +228,30 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                             file_data = processed_files[filename]
                             # Prepare DataFrame for PDF (convert strings back to numeric types)
                             pdf_df = _prepare_df_for_pdf(file_data["df"])
-                            pdf_bytes = generate_pdf_bytes(
+
+                            # Generate PDF (falls back to HTML if system libraries missing)
+                            report_bytes, file_ext = generate_pdf_bytes(
                                 transactions=pdf_df,
                                 attendee_reference=st.session_state["attendee_ref"],
                                 source_filename=filename,
                                 pre_header_rows=file_data.get("pre_header", []),
                             )
 
-                            pdf_filename = filename.replace(".csv", ".pdf")
+                            dl_filename = filename.replace(".csv", file_ext)
+
+                            if file_ext == ".pdf":
+                                mime_type = "application/pdf"
+                                btn_label = f"⬇️ {dl_filename}"
+                            else:
+                                mime_type = "text/html"
+                                btn_label = f"⬇️ {dl_filename} (Print to PDF)"
 
                             st.download_button(
-                                label=f"⬇️ {pdf_filename}",
-                                data=pdf_bytes.getvalue(),
-                                file_name=pdf_filename,
-                                mime="application/pdf",
-                                key=f"download_pdf_{filename}",
+                                label=btn_label,
+                                data=report_bytes.getvalue(),
+                                file_name=dl_filename,
+                                mime=mime_type,
+                                key=f"download_{filename}",
                                 width='stretch',
                             )
                             st.success(get_text("process.pdf_ready"))

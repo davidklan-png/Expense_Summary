@@ -187,7 +187,7 @@ def generate_pdf_bytes(
     source_filename: str,
     pre_header_rows: list[str] = None,
     template_dir: Optional[Path] = None,
-) -> BytesIO:
+) -> tuple[BytesIO, str]:
     """
     Generate PDF report from transaction data as bytes for download.
 
@@ -199,7 +199,8 @@ def generate_pdf_bytes(
         template_dir: Directory containing Jinja2 templates (default: package templates/)
 
     Returns:
-        BytesIO object containing PDF data
+        Tuple of (BytesIO object containing PDF data, file extension)
+        Falls back to HTML if PDF generation fails due to missing system libraries.
     """
     # Determine template directory
     if template_dir is None:
@@ -218,11 +219,82 @@ def generate_pdf_bytes(
     # Render template to HTML
     html_content = template.render(**context)
 
-    # Import WeasyPrint here for PDF generation
-    from weasyprint import HTML
+    # Try to import WeasyPrint and generate PDF
+    try:
+        from weasyprint import HTML
+        # Convert HTML to PDF bytes
+        pdf_bytes = HTML(string=html_content, base_url=str(template_dir)).write_pdf()
+        return BytesIO(pdf_bytes), ".pdf"
+    except OSError as e:
+        # System libraries not available - fall back to HTML
+        if "libpango" in str(e) or "libcairo" in str(e):
+            # Return HTML with instructions for browser print-to-PDF
+            html_with_print = html_content + """
+<script>
+window.onload = function() {
+    if (confirm('PDF generation requires system libraries. Would you like to open the print dialog to save as PDF?')) {
+        window.print();
+    }
+};
+</script>
+<style>
+@media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+"""
+            return BytesIO(html_with_print.encode('utf-8')), ".html"
+        raise
+    except Exception:
+        raise
 
-    # Convert HTML to PDF bytes
-    pdf_bytes = HTML(string=html_content, base_url=str(template_dir)).write_pdf()
 
-    # Return as BytesIO for download
-    return BytesIO(pdf_bytes)
+def generate_html_bytes(
+    transactions: pd.DataFrame,
+    attendee_reference: pd.DataFrame,
+    source_filename: str,
+    pre_header_rows: list[str] = None,
+    template_dir: Optional[Path] = None,
+) -> BytesIO:
+    """
+    Generate HTML report as bytes for download (fallback option).
+
+    Args:
+        transactions: Processed transaction DataFrame
+        attendee_reference: Attendee reference DataFrame
+        source_filename: Original source CSV filename
+        pre_header_rows: Raw pre-header lines from CSV (optional)
+        template_dir: Directory containing Jinja2 templates (default: package templates/)
+
+    Returns:
+        BytesIO object containing HTML data
+    """
+    # Determine template directory
+    if template_dir is None:
+        current_file = Path(__file__)
+        template_dir = current_file.parent / "templates"
+
+    # Set up Jinja2 environment
+    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=select_autoescape(["html", "xml"]))
+
+    # Load template
+    template = env.get_template("report.html.j2")
+
+    # Prepare context
+    context = prepare_report_context(transactions, attendee_reference, source_filename, pre_header_rows or [])
+
+    # Render template to HTML
+    html_content = template.render(**context)
+
+    # Add print instruction message
+    html_with_message = html_content.replace(
+        "</body>",
+        """
+<div style="position: fixed; top: 10px; right: 10px; background: #ffeb3b; padding: 10px; border-radius: 4px; z-index: 1000;">
+    <strong>Tip:</strong> Use Ctrl+P to save as PDF
+</div>
+</body>
+"""
+    )
+
+    return BytesIO(html_with_message.encode('utf-8'))
