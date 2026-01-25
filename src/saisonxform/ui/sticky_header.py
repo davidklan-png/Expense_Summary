@@ -33,7 +33,7 @@ def render_sticky_header():
             # Language toggle button in upper-right
             current_lang = st.session_state["lang"]
             current_lang_display = "🇯🇵 日本語" if current_lang == "en" else "🇺🇸 English"
-            if st.button(current_lang_display, key="lang-toggle", use_container_width=True):
+            if st.button(current_lang_display, key="lang-toggle", width='stretch'):
                 st.session_state["lang"] = "ja" if current_lang == "en" else "en"
                 st.rerun()
 
@@ -80,7 +80,7 @@ def render_sticky_header():
                         st.markdown("**→**")
 
         with col3:
-            if st.button(f"🔄 {get_text('global.reset')}", key="reset-workflow-btn", use_container_width=True):
+            if st.button(f"🔄 {get_text('global.reset')}", key="reset-workflow-btn", width='stretch'):
                 reset_workflow()
                 st.rerun()
 

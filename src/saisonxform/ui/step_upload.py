@@ -82,7 +82,7 @@ def render_upload_step():
             if st.button(
                 get_text("upload.continue_to_process"),
                 type="primary",
-                use_container_width=True,
+                width='stretch',
                 key="advance_to_process",
             ):
                 advance_to_next_step()

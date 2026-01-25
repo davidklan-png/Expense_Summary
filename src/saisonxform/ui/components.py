@@ -275,7 +275,7 @@ class Button:
         icon: Optional[str] = None,
         key: Optional[str] = None,
         disabled: bool = False,
-        use_container_width: bool = False,
+        width: str = "content",
     ) -> bool:
         """Render a styled button using Streamlit's native button.
 
@@ -285,7 +285,7 @@ class Button:
             icon: Optional emoji icon
             key: Unique key for Streamlit
             disabled: Disable button
-            use_container_width: Expand button to container width
+            width: Button width ('stretch' for full width, 'content' for auto)
 
         Returns:
             True if button was clicked
@@ -301,7 +301,7 @@ class Button:
             key=key,
             type=button_type,
             disabled=disabled,
-            use_container_width=use_container_width,
+            width=width,
         )
 
     @classmethod
@@ -311,7 +311,7 @@ class Button:
         icon: Optional[str] = None,
         key: Optional[str] = None,
         disabled: bool = False,
-        use_container_width: bool = False,
+        width: str = "content",
     ) -> bool:
         """Render primary button."""
         return cls.render(
@@ -320,7 +320,7 @@ class Button:
             icon=icon,
             key=key,
             disabled=disabled,
-            use_container_width=use_container_width,
+            width=width,
         )
 
     @classmethod
@@ -330,7 +330,7 @@ class Button:
         icon: Optional[str] = None,
         key: Optional[str] = None,
         disabled: bool = False,
-        use_container_width: bool = False,
+        width: str = "content",
     ) -> bool:
         """Render secondary button."""
         return cls.render(
@@ -339,7 +339,7 @@ class Button:
             icon=icon,
             key=key,
             disabled=disabled,
-            use_container_width=use_container_width,
+            width=width,
         )
 
     @classmethod
@@ -349,7 +349,7 @@ class Button:
         icon: Optional[str] = None,
         key: Optional[str] = None,
         disabled: bool = False,
-        use_container_width: bool = False,
+        width: str = "content",
     ) -> bool:
         """Render danger button."""
         return cls.render(
@@ -358,7 +358,7 @@ class Button:
             icon=icon,
             key=key,
             disabled=disabled,
-            use_container_width=use_container_width,
+            width=width,
         )
 
 

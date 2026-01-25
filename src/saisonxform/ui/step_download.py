@@ -184,7 +184,7 @@ def render_download_step(generate_report_callback):
                 file_name="saison_transform_results.zip",
                 mime="application/zip",
                 type="primary",
-                use_container_width=True,
+                width='stretch',
                 on_click=reset_workflow,
             )
 
@@ -197,7 +197,7 @@ def render_download_step(generate_report_callback):
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button(
-            get_text("download.btn_new_files"), type="primary", use_container_width=True, key="reset_from_download",
+            get_text("download.btn_new_files"), type="primary", width='stretch', key="reset_from_download",
         ):
             reset_workflow()
             st.rerun()

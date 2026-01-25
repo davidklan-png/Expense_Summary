@@ -216,7 +216,7 @@ class EmptyState:
                             primary_action[0],
                             key=f"empty_state_primary_{variant}_{key_suffix}",
                             type="primary",
-                            use_container_width=True,
+                            width='stretch',
                         ):
                             primary_action[1]()
                     idx += 1
@@ -227,7 +227,7 @@ class EmptyState:
                             secondary_action[0],
                             key=f"empty_state_secondary_{variant}_{key_suffix}",
                             type="secondary",
-                            use_container_width=True,
+                            width='stretch',
                         ):
                             secondary_action[1]()
                     idx += 1
@@ -237,7 +237,7 @@ class EmptyState:
                         if st.button(
                             tertiary_action[0],
                             key=f"empty_state_tertiary_{variant}_{key_suffix}",
-                            use_container_width=True,
+                            width='stretch',
                         ):
                             tertiary_action[1]()
 

@@ -129,7 +129,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             if st.button(
                 get_text("process.continue_to_download"),
                 type="primary",
-                use_container_width=True,
+                width='stretch',
                 key="advance_to_download",
             ):
                 advance_to_next_step()

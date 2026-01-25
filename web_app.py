@@ -249,7 +249,7 @@ def render_editor(filename: str) -> None:
 
     edited_df = st.data_editor(
         display_df,
-        use_container_width=True,
+        width='stretch',
         height=400,
         num_rows="dynamic",  # Allow adding/deleting rows
         key=f"editor_{filename}",
@@ -287,7 +287,7 @@ def render_editor(filename: str) -> None:
                 attendee_df = pd.DataFrame(unique_attendees)
             else:
                 attendee_df = unique_attendees
-            st.dataframe(attendee_df, use_container_width=True, hide_index=True)
+            st.dataframe(attendee_df, width='stretch', hide_index=True)
 
 
 def generate_report(file_data: dict) -> str:
@@ -407,7 +407,7 @@ def main() -> None:
 
             st.dataframe(
                 attendee_display,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 height=400
             )
