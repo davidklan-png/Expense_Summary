@@ -1,4 +1,5 @@
-"""HTML report generation using Jinja2 templates."""
+"""HTML and PDF report generation using Jinja2 templates and WeasyPrint."""
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional
 
@@ -178,3 +179,50 @@ def generate_html_report(
     output_path.write_text(html_content, encoding="utf-8")
 
     return output_path
+
+
+def generate_pdf_bytes(
+    transactions: pd.DataFrame,
+    attendee_reference: pd.DataFrame,
+    source_filename: str,
+    pre_header_rows: list[str] = None,
+    template_dir: Optional[Path] = None,
+) -> BytesIO:
+    """
+    Generate PDF report from transaction data as bytes for download.
+
+    Args:
+        transactions: Processed transaction DataFrame
+        attendee_reference: Attendee reference DataFrame
+        source_filename: Original source CSV filename
+        pre_header_rows: Raw pre-header lines from CSV (optional)
+        template_dir: Directory containing Jinja2 templates (default: package templates/)
+
+    Returns:
+        BytesIO object containing PDF data
+    """
+    # Determine template directory
+    if template_dir is None:
+        current_file = Path(__file__)
+        template_dir = current_file.parent / "templates"
+
+    # Set up Jinja2 environment
+    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=select_autoescape(["html", "xml"]))
+
+    # Load template
+    template = env.get_template("report.html.j2")
+
+    # Prepare context
+    context = prepare_report_context(transactions, attendee_reference, source_filename, pre_header_rows or [])
+
+    # Render template to HTML
+    html_content = template.render(**context)
+
+    # Import WeasyPrint here for PDF generation
+    from weasyprint import HTML
+
+    # Convert HTML to PDF bytes
+    pdf_bytes = HTML(string=html_content, base_url=str(template_dir)).write_pdf()
+
+    # Return as BytesIO for download
+    return BytesIO(pdf_bytes)

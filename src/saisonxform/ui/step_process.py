@@ -1,16 +1,17 @@
 """Step 2: Process & Edit Component.
 
-File processing, preview, and editing interface.
+File processing, preview, editing interface, and PDF generation.
 """
 
 import streamlit as st
 
+from ..reporting import generate_pdf_bytes
 from .translations import get_text
-from .workflow_state import WorkflowStep, advance_to_next_step, can_access_step
+from .workflow_state import WorkflowStep, can_access_step
 
 
 def render_process_edit_step(process_file_callback, render_editor_callback):
-    """Render the process and edit step.
+    """Render the process and edit step with PDF generation.
 
     Args:
         process_file_callback: Function to process uploaded files
@@ -122,18 +123,87 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             with st.expander(get_text("process.edit_file", filename=selected_file), expanded=True):
                 render_editor_callback(selected_file)
 
-        # Manual advance button
+        # PDF Generation section
         st.markdown("---")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button(
-                get_text("process.continue_to_download"),
-                type="primary",
-                width='stretch',
-                key="advance_to_download",
-            ):
-                advance_to_next_step()
-                st.rerun()
+
+        # PDF generation for single or multiple files
+        if len(processed_files) == 1:
+            # Single file - immediate download
+            filename = list(processed_files.keys())[0]
+            file_data = processed_files[filename]
+
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    get_text("process.create_pdf"),
+                    type="primary",
+                    width='stretch',
+                    key="create_pdf_single",
+                ):
+                    try:
+                        # Generate PDF
+                        pdf_bytes = generate_pdf_bytes(
+                            transactions=file_data["df"],
+                            attendee_reference=st.session_state["attendee_ref"],
+                            source_filename=filename,
+                            pre_header_rows=file_data.get("pre_header", []),
+                        )
+
+                        # Prepare download filename
+                        pdf_filename = filename.replace(".csv", ".pdf")
+
+                        # Trigger download
+                        st.download_button(
+                            label="⬇️ Download PDF",
+                            data=pdf_bytes.getvalue(),
+                            file_name=pdf_filename,
+                            mime="application/pdf",
+                            key="download_pdf_button",
+                            width='stretch',
+                        )
+                        st.success(get_text("process.pdf_ready"))
+
+                    except Exception as e:
+                        st.error(get_text("process.pdf_error", error=str(e)))
+        else:
+            # Multiple files - allow individual PDF downloads
+            st.markdown("### 📄 Generate PDF Reports")
+            st.caption("Click to generate and download PDF for each file")
+
+            for filename in processed_files.keys():
+                col1, col2, col3 = st.columns([3, 2, 1])
+                with col1:
+                    st.markdown(f"**{filename}**")
+                with col2:
+                    if st.button(
+                        get_text("process.create_pdf"),
+                        key=f"pdf_{filename}",
+                        width='stretch',
+                    ):
+                        try:
+                            file_data = processed_files[filename]
+                            pdf_bytes = generate_pdf_bytes(
+                                transactions=file_data["df"],
+                                attendee_reference=st.session_state["attendee_ref"],
+                                source_filename=filename,
+                                pre_header_rows=file_data.get("pre_header", []),
+                            )
+
+                            pdf_filename = filename.replace(".csv", ".pdf")
+
+                            st.download_button(
+                                label=f"⬇️ {pdf_filename}",
+                                data=pdf_bytes.getvalue(),
+                                file_name=pdf_filename,
+                                mime="application/pdf",
+                                key=f"download_pdf_{filename}",
+                                width='stretch',
+                            )
+                            st.success(get_text("process.pdf_ready"))
+                            st.rerun()
+
+                        except Exception as e:
+                            st.error(get_text("process.pdf_error", error=str(e)))
 
     # Section divider
     st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)

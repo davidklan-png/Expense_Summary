@@ -45,23 +45,21 @@ def render_sticky_header():
             st.caption(get_text("global.app_subtitle"))
 
         with col2:
-            # Step indicator using columns
-            step_cols = st.columns([1, 0.3, 1, 0.3, 1])
+            # Step indicator using columns for 2 steps
+            step_cols = st.columns([1, 0.3, 1])
 
             steps = [
                 {"step": WorkflowStep.UPLOAD, "number": "①", "label": get_text("steps.step_1")},
                 {"step": WorkflowStep.PROCESS_EDIT, "number": "②", "label": get_text("steps.step_2")},
-                {"step": WorkflowStep.DOWNLOAD, "number": "③", "label": get_text("steps.step_3")},
             ]
 
             for idx, step_info in enumerate(steps):
-                col_idx = idx * 2
                 step = step_info["step"]
                 status = get_step_status(step)
                 is_current = current_step == step
 
-                with step_cols[col_idx]:
-                    # Determine emoji based on actual step state (not translated text)
+                with step_cols[idx]:
+                    # Determine emoji based on actual step state
                     if is_step_complete(step):
                         emoji = "✅"
                     elif is_current:
@@ -74,9 +72,9 @@ def render_sticky_header():
                     st.markdown(f"**{emoji} {step_info['label']}**")
                     st.caption(status)
 
-                # Connector
+                # Connector between steps
                 if idx < len(steps) - 1:
-                    with step_cols[col_idx + 1]:
+                    with step_cols[2]:
                         st.markdown("**→**")
 
         with col3:

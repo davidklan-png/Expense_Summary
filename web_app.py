@@ -1,9 +1,8 @@
-"""Streamlit Web Interface for Saison Transform - Three-Step Workflow.
+"""Streamlit Web Interface for Saison Transform - Two-Step Workflow.
 
 Interactive web application with vertical scroll-based workflow:
 1. Upload - File upload with drag & drop
-2. Process & Edit - Review and edit processed data
-3. Download - Download results in multiple formats
+2. Process & Edit - Review, edit, and generate PDF report
 """
 
 import sys
@@ -19,9 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from saisonxform.config import Config
 from saisonxform.io import read_csv_with_detection
-from saisonxform.reporting import generate_html_report, get_unique_attendees
+from saisonxform.reporting import get_unique_attendees
 from saisonxform.selectors import estimate_attendee_count, sample_attendee_ids
-from saisonxform.ui.step_download import render_download_step
 from saisonxform.ui.step_process import render_process_edit_step
 from saisonxform.ui.step_upload import render_upload_step
 from saisonxform.ui.sticky_header import render_sticky_header
@@ -290,45 +288,6 @@ def render_editor(filename: str) -> None:
             st.dataframe(attendee_df, width='stretch', hide_index=True)
 
 
-def generate_report(file_data: dict) -> str:
-    """Generate HTML report for a file."""
-    # Create temp output path
-    temp_output = Path(f"/tmp/temp_report_{id(file_data)}.html")
-
-    # Convert string columns back to appropriate types for report generation
-    report_df = file_data["df"].copy()
-
-    # Convert numeric columns back to appropriate types
-    if "利用金額" in report_df.columns:
-        # Convert to numeric, coerce errors to NaN
-        report_df["利用金額"] = pd.to_numeric(report_df["利用金額"], errors="coerce")
-
-    if "人数" in report_df.columns:
-        # Convert to integer, filling NaN with 0 for consistent type
-        report_df["人数"] = (
-            pd.to_numeric(report_df["人数"], errors="coerce")
-            .fillna(0)
-            .astype(int)
-        )
-
-    # Generate HTML report to temp file
-    output_path = generate_html_report(
-        transactions=report_df,
-        attendee_reference=st.session_state["attendee_ref"],
-        output_path=temp_output,
-        source_filename="processed_data.csv",
-        pre_header_rows=file_data.get("pre_header", []),
-    )
-
-    # Read the HTML content
-    html_content = output_path.read_text(encoding="utf-8")
-
-    # Clean up temp file
-    output_path.unlink()
-
-    return html_content
-
-
 def main() -> None:
     """Main application entry point."""
     initialize_session_state()
@@ -416,11 +375,8 @@ def main() -> None:
     # Step 1: Upload
     render_upload_step()
 
-    # Step 2: Process & Edit
+    # Step 2: Process & Edit (includes PDF generation)
     render_process_edit_step(process_file, render_editor)
-
-    # Step 3: Download
-    render_download_step(generate_report)
 
     # Auto-scroll to current step
     if "scroll_to_step" in st.session_state and st.session_state["scroll_to_step"]:

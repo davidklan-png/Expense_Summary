@@ -1,6 +1,6 @@
 """Workflow State Management for Streamlit App.
 
-Manages the three-step workflow state using Streamlit session state.
+Manages the two-step workflow state using Streamlit session state.
 """
 
 from enum import Enum
@@ -15,7 +15,6 @@ class WorkflowStep(Enum):
 
     UPLOAD = 1
     PROCESS_EDIT = 2
-    DOWNLOAD = 3
 
 
 def initialize_workflow_state():
@@ -27,7 +26,6 @@ def initialize_workflow_state():
         st.session_state["step_completed"] = {
             WorkflowStep.UPLOAD: False,
             WorkflowStep.PROCESS_EDIT: False,
-            WorkflowStep.DOWNLOAD: False,
         }
 
     if "scroll_to_step" not in st.session_state:
@@ -62,10 +60,6 @@ def advance_to_next_step():
         mark_step_complete(WorkflowStep.UPLOAD)
         set_current_step(WorkflowStep.PROCESS_EDIT)
         st.session_state["scroll_to_step"] = "step-2"
-    elif current == WorkflowStep.PROCESS_EDIT:
-        mark_step_complete(WorkflowStep.PROCESS_EDIT)
-        set_current_step(WorkflowStep.DOWNLOAD)
-        st.session_state["scroll_to_step"] = "step-3"
 
 
 def reset_workflow():
@@ -74,7 +68,6 @@ def reset_workflow():
     st.session_state["step_completed"] = {
         WorkflowStep.UPLOAD: False,
         WorkflowStep.PROCESS_EDIT: False,
-        WorkflowStep.DOWNLOAD: False,
     }
     st.session_state["scroll_to_step"] = "step-1"
 
@@ -91,8 +84,6 @@ def can_access_step(step: WorkflowStep) -> bool:
         return True
     elif step == WorkflowStep.PROCESS_EDIT:
         return is_step_complete(WorkflowStep.UPLOAD)
-    elif step == WorkflowStep.DOWNLOAD:
-        return is_step_complete(WorkflowStep.PROCESS_EDIT)
     return False
 
 
