@@ -4,10 +4,40 @@ File processing, preview, editing interface, and PDF generation.
 """
 
 import streamlit as st
+import pandas as pd
 
 from ..reporting import generate_pdf_bytes
 from .translations import get_text
 from .workflow_state import WorkflowStep, can_access_step
+
+
+def _prepare_df_for_pdf(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert DataFrame columns back to proper types for PDF generation.
+
+    The editor converts everything to strings for editing, but PDF generation
+    needs proper numeric types for formatting.
+
+    Args:
+        df: DataFrame with string columns
+
+    Returns:
+        DataFrame with numeric columns converted back to proper types
+    """
+    pdf_df = df.copy()
+
+    # Convert 利用金額 back to numeric
+    if "利用金額" in pdf_df.columns:
+        pdf_df["利用金額"] = pd.to_numeric(pdf_df["利用金額"], errors="coerce")
+
+    # Convert 人数 back to integer
+    if "人数" in pdf_df.columns:
+        pdf_df["人数"] = (
+            pd.to_numeric(pdf_df["人数"], errors="coerce")
+            .fillna(0)
+            .astype(int)
+        )
+
+    return pdf_df
 
 
 def render_process_edit_step(process_file_callback, render_editor_callback):
@@ -141,9 +171,12 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     key="create_pdf_single",
                 ):
                     try:
+                        # Prepare DataFrame for PDF (convert strings back to numeric types)
+                        pdf_df = _prepare_df_for_pdf(file_data["df"])
+
                         # Generate PDF
                         pdf_bytes = generate_pdf_bytes(
-                            transactions=file_data["df"],
+                            transactions=pdf_df,
                             attendee_reference=st.session_state["attendee_ref"],
                             source_filename=filename,
                             pre_header_rows=file_data.get("pre_header", []),
@@ -182,8 +215,10 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     ):
                         try:
                             file_data = processed_files[filename]
+                            # Prepare DataFrame for PDF (convert strings back to numeric types)
+                            pdf_df = _prepare_df_for_pdf(file_data["df"])
                             pdf_bytes = generate_pdf_bytes(
-                                transactions=file_data["df"],
+                                transactions=pdf_df,
                                 attendee_reference=st.session_state["attendee_ref"],
                                 source_filename=filename,
                                 pre_header_rows=file_data.get("pre_header", []),
