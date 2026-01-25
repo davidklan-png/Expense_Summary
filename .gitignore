@@ -97,8 +97,10 @@ Archive/
 !demo/Reference/
 !demo/Output/
 
-# OpenSpec archives (keep only active changes)
-openspec/changes/archive/
+# Backup files
+*.backup
+*_old.py
+*_old.*
 
 # Serena MCP workspace data
 .serena/

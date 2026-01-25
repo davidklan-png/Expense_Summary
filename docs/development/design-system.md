@@ -6,8 +6,8 @@ This design system provides a comprehensive foundation for the Saisonxform web i
 
 ## Files
 
-- **[design-system.json](design-system.json)** - Complete design token specification in JSON format
-- **[tailwind.config.js](tailwind.config.js)** - Tailwind CSS configuration extending the design tokens
+- **[../config/design-system.json](../config/design-system.json)** - Complete design token specification in JSON format
+- **[../config/tailwind.config.js](../config/tailwind.config.js)** - Tailwind CSS configuration extending the design tokens
 
 ## Design Principles
 
@@ -258,7 +258,7 @@ st.markdown(f"""
 # Install Tailwind and dependencies
 npm install -D tailwindcss @tailwindcss/forms @tailwindcss/typography
 
-# Use the included tailwind.config.js
+# Use the included config/tailwind.config.js
 npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch
 ```
 

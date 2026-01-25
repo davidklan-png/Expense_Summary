@@ -592,7 +592,7 @@ send({ type: 'SUBMIT', query: 'Hello' });
 
 - [Optimistic UI Interface](../optimistic_ui_interface.tsx)
 - [Three-Pane Interface](../three_pane_ai_interface.tsx)
-- [Design System](../../design-system.json)
+- [Design System](../../config/design-system.json)
 
 ---
 

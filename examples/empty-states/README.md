@@ -629,7 +629,7 @@ test('calls onUpload when button clicked', () => {
 
 - [Empty State Component](./EmptyState.tsx) - Main component
 - [Usage Examples](./EmptyStateExamples.tsx) - Interactive examples
-- [Design System](../../design-system.json) - Design tokens
+- [Design System](../../config/design-system.json) - Design tokens
 
 ## License
 

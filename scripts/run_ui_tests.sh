@@ -9,9 +9,9 @@ echo ""
 
 # Check if virtual environment is activated
 if [[ -z "$VIRTUAL_ENV" ]]; then
-    if [ -f ".venv/bin/activate" ]; then
+    if [ -f "$(dirname "$0")/../.venv/bin/activate" ]; then
         echo "📦 Activating virtual environment..."
-        source .venv/bin/activate
+        source "$(dirname "$0")/../.venv/bin/activate"
     else
         echo "⚠️  Warning: No virtual environment found"
     fi
@@ -34,6 +34,7 @@ echo ""
 
 # Start Streamlit app in background
 echo "🚀 Starting Streamlit app..."
+cd "$(dirname "$0")/.."
 export SAISONXFORM_SKIP_GIT_VALIDATION=1
 streamlit run web_app.py --server.port 8502 --server.headless true > /dev/null 2>&1 &
 STREAMLIT_PID=$!

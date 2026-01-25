@@ -508,9 +508,9 @@ All components follow WCAG AA guidelines:
 
 ## Related Documentation
 
-- [Design System JSON](../../../design-system.json)
-- [Tailwind Config](../../../tailwind.config.js)
-- [Design System README](../../../DESIGN_SYSTEM_README.md)
+- [Design System JSON](../../../config/design-system.json)
+- [Tailwind Config](../../../config/tailwind.config.js)
+- [Design System README](../../../docs/development/design-system.md)
 - [Component Showcase](../../../examples/component_showcase.py)
 
 ## Support

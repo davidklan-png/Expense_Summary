@@ -36,5 +36,5 @@ echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Activate virtual environment and run streamlit
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 .venv/bin/python -m streamlit run web_app.py --server.port 8502 --server.address 0.0.0.0 --server.headless true

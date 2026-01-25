@@ -12,7 +12,7 @@ import pytest
 from playwright.sync_api import Page, expect
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from playwright_config import DEVICES, TEST_CONFIG
+from config.playwright_config import DEVICES, TEST_CONFIG
 
 
 class TestCrossBrowserCore:

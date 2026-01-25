@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 try:
     from playwright.sync_api import sync_playwright  # Browser, BrowserContext, Page not used
 
-    from playwright_config import BROWSERS, DEVICES, TEST_CONFIG
+    from config.playwright_config import BROWSERS, DEVICES, TEST_CONFIG
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:

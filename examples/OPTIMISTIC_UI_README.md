@@ -28,10 +28,10 @@ npm install -D tailwindcss postcss autoprefixer
 
 ### 2. Setup Tailwind CSS
 
-Use the included [tailwind.config.js](../tailwind.config.js):
+Use the included [tailwind.config.js](../config/tailwind.config.js):
 
 ```bash
-cp tailwind.config.js my-app/tailwind.config.js
+cp config/tailwind.config.js my-app/tailwind.config.js
 ```
 
 ### 3. Import the Component
@@ -552,8 +552,8 @@ const debouncedSubmit = useMemo(
 
 - [Three-Pane Interface](./three_pane_ai_interface.tsx) - Base implementation
 - [React Layout](./react_layout.tsx) - Layout structure
-- [Tailwind Config](../tailwind.config.js) - Design tokens
-- [Design System](../design-system.json) - Token specification
+- [Tailwind Config](../config/tailwind.config.js) - Design tokens
+- [Design System](../config/design-system.json) - Token specification
 
 ## License
 

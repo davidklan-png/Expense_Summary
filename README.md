@@ -21,10 +21,10 @@ The Saison Transform includes a user-friendly web interface built with Streamlit
 
 ```bash
 # Local access only (default)
-./run_web.sh
+./scripts/run_web.sh
 
 # Access from other devices on your network
-./run_web_network.sh
+./scripts/run_web_network.sh
 ```
 
 ### Network Access (WSL2/Windows Users)
@@ -33,7 +33,7 @@ To access the web interface from other devices on your WiFi:
 
 1. **Start the server in network mode:**
    ```bash
-   ./run_web_network.sh
+   ./scripts/run_web_network.sh
    ```
 
 2. **Setup port forwarding (WSL2 only - first time setup):**
@@ -42,7 +42,7 @@ To access the web interface from other devices on your WiFi:
    ```powershell
    # Option 1: Run the automated setup script
    cd path\to\saisonxform
-   .\setup_port_forward.ps1
+   .\scripts\setup_port_forward.ps1
 
    # Option 2: Manual setup
    netsh interface portproxy add v4tov4 listenport=8502 listenaddress=0.0.0.0 connectport=8502 connectaddress=<WSL_IP>

@@ -25,14 +25,14 @@ npm install -D tailwindcss postcss autoprefixer
 
 ### 2. Setup Tailwind CSS
 
-Use the included [tailwind.config.js](../tailwind.config.js) from the Saisonxform design system.
+Use the included [tailwind.config.js](../config/tailwind.config.js) from the Saisonxform design system.
 
 ```bash
 # Initialize Tailwind (if not already done)
 npx tailwindcss init -p
 
 # Copy Saisonxform Tailwind config
-cp tailwind.config.js my-app/tailwind.config.js
+cp config/tailwind.config.js my-app/tailwind.config.js
 ```
 
 ### 3. Import the Component
@@ -437,8 +437,8 @@ npm install -D @types/react @types/react-dom
 
 ## Related Files
 
-- [Tailwind Config](../tailwind.config.js) - Design system configuration
-- [Design System JSON](../design-system.json) - Complete token specification
+- [Tailwind Config](../config/tailwind.config.js) - Design system configuration
+- [Design System JSON](../config/design-system.json) - Complete token specification
 - [Component Showcase](./component_showcase.py) - Streamlit components
 
 ## License
