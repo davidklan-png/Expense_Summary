@@ -162,7 +162,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
                 amount_brackets=brackets_to_use,
                 cost_per_person=cost_per_person,
             )
-            df.loc[idx, "人数"] = count
+            df.loc[idx, "人数"] = str(count)
 
             ids_result = sample_attendee_ids(
                 count=count,

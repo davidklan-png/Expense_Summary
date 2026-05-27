@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from web_app import (
     load_attendee_reference,
     initialize_session_state,
+    process_file,
 )
 
 
@@ -75,6 +76,30 @@ class TestInitializeSessionState:
 
         assert mock_st.session_state["attendee_ref"] == "existing_ref"
         assert mock_st.session_state["config"] == "existing_config"
+
+
+class TestProcessFile:
+    """Test uploaded file processing."""
+
+    @patch("web_app.st")
+    def test_process_file_keeps_attendee_count_string_compatible(self, mock_st, sample_csv_bytes, sample_attendee_ref):
+        """Should not assign integer attendee counts into string-backed columns."""
+        mock_config = Mock()
+        mock_config.min_attendees = 2
+        mock_config.max_attendees = 8
+        mock_config.amount_based_attendees = {"brackets": {(0, 999999): {"min": 2, "max": 2}}}
+        mock_config.core_fill_strategy = "random"
+        mock_config.primary_id_weights = {"2": 0.9, "1": 0.1}
+        mock_st.session_state = {
+            "config": mock_config,
+            "attendee_ref": sample_attendee_ref,
+        }
+
+        result = process_file("sample.csv", sample_csv_bytes)
+
+        processed_df = result["df"]
+        assert processed_df.loc[0, "人数"] == "2"
+        assert isinstance(processed_df.loc[0, "人数"], str)
 
 
 # Fixtures

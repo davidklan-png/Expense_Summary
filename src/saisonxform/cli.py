@@ -324,7 +324,7 @@ def run(
                         amount_brackets=amount_brackets,
                         cost_per_person=cost_per_person,
                     )
-                    df.loc[idx, "人数"] = count
+                    df.loc[idx, "人数"] = str(count)
 
                     # Sample attendee IDs with config weights
                     # Extract weights from config (default: 90% ID '2', 10% ID '1')

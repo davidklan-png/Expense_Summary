@@ -113,6 +113,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
 
         progress_bar = st.progress(0)
         status_text = st.empty()
+        failed_files = []
 
         for idx, filename in enumerate(unprocessed_files):
             status_text.text(get_text("process.processing_file", filename=filename))
@@ -128,11 +129,15 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     st.session_state["processed_files"][filename] = result
 
             except Exception as e:
+                failed_files.append(filename)
                 st.error(get_text("process.error_processing", filename=filename, error=str(e)))
 
-        status_text.success(get_text("process.all_processed"))
         progress_bar.empty()
-        st.rerun()
+        if failed_files:
+            status_text.warning(get_text("process.some_failed"))
+        else:
+            status_text.success(get_text("process.all_processed"))
+            st.rerun()
 
     # Show editor if files are processed
     else:
