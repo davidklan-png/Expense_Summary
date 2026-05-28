@@ -41,14 +41,13 @@ class TestCrossBrowserCore:
         critical_errors = [e for e in console_errors if "SyntaxError" in e or "TypeError" in e]
         assert len(critical_errors) == 0, f"JavaScript errors detected: {critical_errors}"
 
-    def test_network_info_displays_without_error(self, page: Page, app_url: str):
-        """Test network information displays correctly (Safari regex fix)."""
+    def test_app_shell_displays_without_error(self, page: Page, app_url: str):
+        """Test the primary app shell displays without Safari regex errors."""
         page.goto(app_url)
-        page.wait_for_selector("text=🌐 Network Access", timeout=TEST_CONFIG["timeout"])
+        page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
-        # Should see URL in code block (not markdown link)
-        local_url = page.locator("code:has-text('http://localhost:8502')")
-        expect(local_url).to_be_visible()
+        expect(page.locator("text=1 Upload Your Files")).to_be_visible()
+        expect(page.locator("text=2 Review & Edit")).to_be_visible()
 
         # No regex errors in console
         console_errors = []
@@ -66,9 +65,9 @@ class TestCrossBrowserCore:
         settings_header = page.locator("text=⚙️ Settings")
         expect(settings_header).to_be_visible()
 
-        # Check network info section
-        network_section = page.locator("text=🌐 Network Access")
-        expect(network_section).to_be_visible()
+        # Check current sidebar workflow and attendee summary.
+        expect(page.locator("text=Attendee List")).to_be_visible()
+        expect(page.locator("text=Saison Transform")).to_be_visible()
 
     def test_main_tabs_render(self, page: Page, app_url: str):
         """Test that main navigation tabs render correctly."""
@@ -77,12 +76,12 @@ class TestCrossBrowserCore:
         # Wait for app to load
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
-        # Check for main tabs (using Streamlit tab structure)
-        # Note: Streamlit tabs may be in different DOM structure
+        # Check for current step-based workflow content.
         page.wait_for_timeout(2000)  # Allow tabs to render
 
         # Verify content areas exist
-        assert page.locator("text=Upload Files").count() > 0 or page.locator("text=📤").count() > 0
+        assert page.locator("text=Upload Your Files").count() > 0
+        assert page.locator("text=Review & Edit").count() > 0
 
     def test_responsive_layout_desktop(self, page: Page, app_url: str):
         """Test layout works on desktop resolution."""
@@ -134,26 +133,13 @@ class TestSafariSpecific:
         assert len(regex_errors) == 0, f"Safari regex errors detected: {regex_errors}"
 
     @pytest.mark.safari
-    def test_url_display_in_code_blocks(self, page: Page, app_url: str):
-        """Test URLs are displayed in code blocks (not markdown links)."""
+    def test_markdown_content_renders_without_regex_errors(self, page: Page, app_url: str):
+        """Test markdown-heavy content renders without Safari regex errors."""
         page.goto(app_url)
-        page.wait_for_selector("text=🌐 Network Access", timeout=TEST_CONFIG["timeout"])
+        page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
-        # URLs should be in <code> elements
-        code_blocks = page.locator("code")
-        code_count = code_blocks.count()
-
-        assert code_count >= 1, "Network URLs should be in code blocks"
-
-        # Check that at least one contains a URL
-        has_url = False
-        for i in range(code_count):
-            text = code_blocks.nth(i).text_content()
-            if "http://" in text or "https://" in text:
-                has_url = True
-                break
-
-        assert has_url, "No URLs found in code blocks"
+        expect(page.locator("text=Upload one or more Saison transaction CSV files")).to_be_visible()
+        expect(page.locator("text=Complete previous step to unlock")).to_be_visible()
 
     @pytest.mark.safari
     def test_webkit_font_rendering(self, page: Page, app_url: str):
