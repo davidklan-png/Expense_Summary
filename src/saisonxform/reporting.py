@@ -247,7 +247,9 @@ def generate_pdf_bytes(
         # System libraries not available - fall back to HTML
         if _is_pdf_system_dependency_error(e):
             # Return HTML with instructions for browser print-to-PDF
-            html_with_print = html_content + """
+            html_with_print = (
+                html_content
+                + """
 <script>
 window.onload = function() {
     if (confirm('PDF generation requires system libraries. Would you like to open the print dialog to save as PDF?')) {
@@ -261,6 +263,7 @@ window.onload = function() {
 }
 </style>
 """
+            )
             return BytesIO(html_with_print.encode("utf-8")), ".html"
         raise
     except Exception:

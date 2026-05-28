@@ -214,10 +214,7 @@ class TestDemoEndToEndWorkflow:
         # Create minimal NameList with at least IDs 1 and 2 (for weighted selection)
         namelist = reference_dir / "NameList.csv"
         namelist.write_text(
-            "ID,Name,Title,Company\n"
-            "1,テスト太郎,部長,テスト株式会社\n"
-            "2,テスト花子,課長,テスト株式会社\n"
-            "3,テスト一郎,主任,テスト株式会社\n",
+            "ID,Name,Title,Company\n" "1,テスト太郎,部長,テスト株式会社\n" "2,テスト花子,課長,テスト株式会社\n" "3,テスト一郎,主任,テスト株式会社\n",
             encoding="utf-8",
         )
 
