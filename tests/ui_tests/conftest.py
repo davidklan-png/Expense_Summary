@@ -3,6 +3,7 @@
 Provides fixtures and configuration for Playwright-based UI testing.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -27,8 +28,14 @@ except ImportError:
 @pytest.fixture(scope="session")
 def browser_type_name(request):
     """Get browser type from pytest markers or default to chromium."""
+    browser_name = os.getenv("BROWSER")
+    if browser_name in BROWSERS:
+        return browser_name
+
     # Check for browser markers
     if request.node.get_closest_marker("webkit"):
+        return "webkit"
+    elif request.node.get_closest_marker("safari"):
         return "webkit"
     elif request.node.get_closest_marker("firefox"):
         return "firefox"

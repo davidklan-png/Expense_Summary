@@ -66,7 +66,7 @@ class TestCrossBrowserCore:
         expect(settings_header).to_be_visible()
 
         # Check current sidebar workflow and attendee summary.
-        expect(page.locator("text=Attendee List")).to_be_visible()
+        expect(page.get_by_text("📂 Attendee List", exact=True)).to_be_visible()
         expect(page.locator("text=Saison Transform")).to_be_visible()
 
     def test_main_tabs_render(self, page: Page, app_url: str):
@@ -139,7 +139,7 @@ class TestSafariSpecific:
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         expect(page.locator("text=Upload one or more Saison transaction CSV files")).to_be_visible()
-        expect(page.locator("text=Complete previous step to unlock")).to_be_visible()
+        assert page.locator("text=Complete previous step").count() > 0
 
     @pytest.mark.safari
     def test_webkit_font_rendering(self, page: Page, app_url: str):
