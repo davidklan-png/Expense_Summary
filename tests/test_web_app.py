@@ -9,11 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from web_app import (
-    initialize_session_state,
-    load_attendee_reference,
-    process_file,
-)
+from web_app import initialize_session_state, load_attendee_reference, process_file
 
 
 class TestLoadAttendeeReference:
