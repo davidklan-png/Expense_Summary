@@ -7,6 +7,17 @@ import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
+PDF_SYSTEM_DEPENDENCY_ERROR_MARKERS = (
+    "cannot load library",
+    "ctypes.util.find_library",
+    "libcairo",
+    "libgobject",
+    "libpango",
+    "gobject-2.0",
+    "pango-1.0",
+)
+
+
 def _numeric_sort_key(id_value: str) -> int | float:
     """Convert ID to numeric sort key, placing non-numeric IDs at end.
 
@@ -17,6 +28,12 @@ def _numeric_sort_key(id_value: str) -> int | float:
         Integer value for numeric IDs, infinity for non-numeric
     """
     return int(id_value) if id_value.isdigit() else float("inf")
+
+
+def _is_pdf_system_dependency_error(error: BaseException) -> bool:
+    """Return True when PDF generation failed because native libraries are missing."""
+    error_text = str(error).lower()
+    return any(marker in error_text for marker in PDF_SYSTEM_DEPENDENCY_ERROR_MARKERS)
 
 
 def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.DataFrame) -> pd.DataFrame:
@@ -225,9 +242,9 @@ def generate_pdf_bytes(
         # Convert HTML to PDF bytes
         pdf_bytes = HTML(string=html_content, base_url=str(template_dir)).write_pdf()
         return BytesIO(pdf_bytes), ".pdf"
-    except OSError as e:
+    except (ImportError, OSError) as e:
         # System libraries not available - fall back to HTML
-        if "libpango" in str(e) or "libcairo" in str(e):
+        if _is_pdf_system_dependency_error(e):
             # Return HTML with instructions for browser print-to-PDF
             html_with_print = html_content + """
 <script>

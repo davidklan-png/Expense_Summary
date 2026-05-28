@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from saisonxform.reporting import generate_html_report, get_unique_attendees, prepare_report_context
+from saisonxform.reporting import generate_html_report, generate_pdf_bytes, get_unique_attendees, prepare_report_context
 
 
 @pytest.fixture
@@ -280,3 +280,34 @@ class TestHTMLReportGeneration:
         assert output_file.exists()
         content = output_file.read_text(encoding="utf-8")
         assert "empty.csv" in content or "Empty" in content or "0" in content
+
+
+class TestPDFReportGeneration:
+    """Test PDF report generation fallback behavior."""
+
+    def test_generate_pdf_falls_back_to_html_when_libgobject_missing(
+        self,
+        monkeypatch,
+        sample_transactions,
+        attendee_reference,
+    ):
+        """Should return an HTML report if WeasyPrint native libraries are missing."""
+        original_import = __import__
+
+        def fake_import(name, *args, **kwargs):
+            if name == "weasyprint":
+                raise OSError(
+                    "cannot load library 'libgobject-2.0-0': cannot open shared object file"
+                )
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr("builtins.__import__", fake_import)
+
+        report_bytes, file_ext = generate_pdf_bytes(
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            source_filename="test.csv",
+        )
+
+        assert file_ext == ".html"
+        assert "東京レストラン" in report_bytes.getvalue().decode("utf-8")
