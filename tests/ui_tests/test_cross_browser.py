@@ -139,7 +139,7 @@ class TestSafariSpecific:
         page.wait_for_selector("text=Saison Transform", timeout=TEST_CONFIG["timeout"])
 
         expect(page.locator("text=Upload one or more Saison transaction CSV files")).to_be_visible()
-        assert page.locator("text=Complete previous step").count() > 0
+        expect(page.locator("text=2 Review & Edit")).to_be_visible()
 
     @pytest.mark.safari
     def test_webkit_font_rendering(self, page: Page, app_url: str):
