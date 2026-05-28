@@ -1,15 +1,17 @@
 """Unit tests for web_app.py."""
-import pandas as pd
-import pytest
+
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import sys
+import pandas as pd
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from web_app import (
-    load_attendee_reference,
     initialize_session_state,
+    load_attendee_reference,
     process_file,
 )
 
@@ -47,7 +49,7 @@ class TestLoadAttendeeReference:
 class TestInitializeSessionState:
     """Test session state initialization."""
 
-    @patch('web_app.st')
+    @patch("web_app.st")
     def test_initialize_session_state_creates_required_keys(self, mock_st):
         """Should create all required session state keys."""
         mock_st.session_state = {}
@@ -55,7 +57,7 @@ class TestInitializeSessionState:
         mock_config.min_attendees = 2
         mock_config.max_attendees = 8
 
-        with patch('web_app.Config', return_value=mock_config):
+        with patch("web_app.Config", return_value=mock_config):
             initialize_session_state()
 
         assert "attendee_ref" in mock_st.session_state
@@ -64,7 +66,7 @@ class TestInitializeSessionState:
         assert "processed_files" in mock_st.session_state
         assert "uploaded_files_cache" in mock_st.session_state
 
-    @patch('web_app.st')
+    @patch("web_app.st")
     def test_initialize_preserves_existing_state(self, mock_st):
         """Should not overwrite existing session state values."""
         mock_st.session_state = {
@@ -109,41 +111,45 @@ def sample_csv_bytes():
     csv_content = """利用日,ご利用店名及び商品名,利用金額,科目＆No.
 2025-01-10,Restaurant,15000,会議費
 """
-    return csv_content.encode('utf-8')
+    return csv_content.encode("utf-8")
 
 
 @pytest.fixture
 def sample_attendee_ref():
     """Sample attendee reference DataFrame."""
-    return pd.DataFrame({
-        "ID": ["1", "2", "3"],
-        "Name": ["Alice", "Bob", "Charlie"],
-        "Title": ["Manager", "Lead", "Developer"],
-        "Company": ["Corp A", "Corp B", "Corp C"]
-    })
+    return pd.DataFrame(
+        {
+            "ID": ["1", "2", "3"],
+            "Name": ["Alice", "Bob", "Charlie"],
+            "Title": ["Manager", "Lead", "Developer"],
+            "Company": ["Corp A", "Corp B", "Corp C"],
+        },
+    )
 
 
 @pytest.fixture
 def sample_processed_data():
     """Sample processed file data."""
     return {
-        "df": pd.DataFrame({
-            "利用日": ["2025-01-10"],
-            "ご利用店名及び商品名": ["Restaurant"],
-            "利用金額": [15000],
-            "科目＆No.": ["会議費"],
-            "人数": [3],
-            "ID1": ["1"],
-            "ID2": ["2"],
-            "ID3": ["3"],
-            "ID4": [""],
-            "ID5": [""],
-            "ID6": [""],
-            "ID7": [""],
-            "ID8": [""],
-            "備考": [""]
-        }),
+        "df": pd.DataFrame(
+            {
+                "利用日": ["2025-01-10"],
+                "ご利用店名及び商品名": ["Restaurant"],
+                "利用金額": [15000],
+                "科目＆No.": ["会議費"],
+                "人数": [3],
+                "ID1": ["1"],
+                "ID2": ["2"],
+                "ID3": ["3"],
+                "ID4": [""],
+                "ID5": [""],
+                "ID6": [""],
+                "ID7": [""],
+                "ID8": [""],
+                "備考": [""],
+            },
+        ),
         "encoding": "utf-8",
         "pre_header": [],
-        "unique_attendees": []
+        "unique_attendees": [],
     }

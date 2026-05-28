@@ -95,13 +95,6 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
     if config and config.core_fill_strategy:
         core_fill_strategy = config.core_fill_strategy
 
-    # Legacy ID weights (deprecated - use Core column instead)
-    id_2_weight = 0.9
-    id_1_weight = 0.1
-    if config and config.primary_id_weights:
-        id_2_weight = float(config.primary_id_weights.get("2", 0.9))
-        id_1_weight = float(config.primary_id_weights.get("1", 0.1))
-
     # Write to temp file securely
     with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as tmp_file:
         tmp_file.write(file_bytes)
@@ -174,7 +167,7 @@ def process_file(filename: str, file_bytes: bytes) -> dict[str, Any]:
             if not isinstance(ids_result, dict):
                 raise TypeError(
                     f"Expected dict from sample_attendee_ids with return_dict=True, "
-                    f"got {type(ids_result).__name__}"
+                    f"got {type(ids_result).__name__}",
                 )
             for i in range(1, 9):
                 col_name = f"ID{i}"
@@ -242,12 +235,12 @@ def render_editor(filename: str) -> None:
             "人数",
             help="Auto-calculated from ID columns",
             disabled=True,
-        )
+        ),
     }
 
     edited_df = st.data_editor(
         display_df,
-        width='stretch',
+        width="stretch",
         height=400,
         num_rows="dynamic",  # Allow adding/deleting rows
         key=f"editor_{filename}",
@@ -258,7 +251,9 @@ def render_editor(filename: str) -> None:
     id_columns = [f"ID{i}" for i in range(1, 9)]
     for idx in edited_df.index:
         # Count non-empty ID values
-        count = sum(1 for col in id_columns if col in edited_df.columns and edited_df.loc[idx, col] not in ["", "nan", None])
+        count = sum(
+            1 for col in id_columns if col in edited_df.columns and edited_df.loc[idx, col] not in ["", "nan", None]
+        )
         edited_df.loc[idx, "人数"] = str(count) if count > 0 else ""
 
     # Update the session state with edited data if changes were made
@@ -274,7 +269,7 @@ def render_editor(filename: str) -> None:
         # Recalculate unique attendees
         st.session_state["processed_files"][filename]["unique_attendees"] = get_unique_attendees(
             st.session_state["processed_files"][filename]["df"],
-            st.session_state["attendee_ref"]
+            st.session_state["attendee_ref"],
         )
         st.rerun()
 
@@ -285,7 +280,7 @@ def render_editor(filename: str) -> None:
                 attendee_df = pd.DataFrame(unique_attendees)
             else:
                 attendee_df = unique_attendees
-            st.dataframe(attendee_df, width='stretch', hide_index=True)
+            st.dataframe(attendee_df, width="stretch", hide_index=True)
 
 
 def main() -> None:
@@ -356,20 +351,13 @@ def main() -> None:
 
                 # Display ID, Name, and Core indicator
                 attendee_display = st.session_state["attendee_ref"][["ID", "Name", "Core"]].copy()
-                attendee_display["Core"] = attendee_display["Core"].apply(
-                    lambda x: "⭐" if x == 1 else ""
-                )
+                attendee_display["Core"] = attendee_display["Core"].apply(lambda x: "⭐" if x == 1 else "")
                 attendee_display.columns = ["ID", "Name", ""]
             else:
                 # No Core column - show ID and Name only
                 attendee_display = st.session_state["attendee_ref"][["ID", "Name"]].copy()
 
-            st.dataframe(
-                attendee_display,
-                width='stretch',
-                hide_index=True,
-                height=400
-            )
+            st.dataframe(attendee_display, width="stretch", hide_index=True, height=400)
 
     # Main content - vertical workflow
     # Step 1: Upload

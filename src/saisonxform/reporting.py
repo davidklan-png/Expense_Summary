@@ -1,11 +1,11 @@
 """HTML and PDF report generation using Jinja2 templates and WeasyPrint."""
+
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-
 
 PDF_SYSTEM_DEPENDENCY_ERROR_MARKERS = (
     "cannot load library",
@@ -239,6 +239,7 @@ def generate_pdf_bytes(
     # Try to import WeasyPrint and generate PDF
     try:
         from weasyprint import HTML
+
         # Convert HTML to PDF bytes
         pdf_bytes = HTML(string=html_content, base_url=str(template_dir)).write_pdf()
         return BytesIO(pdf_bytes), ".pdf"
@@ -260,7 +261,7 @@ window.onload = function() {
 }
 </style>
 """
-            return BytesIO(html_with_print.encode('utf-8')), ".html"
+            return BytesIO(html_with_print.encode("utf-8")), ".html"
         raise
     except Exception:
         raise
@@ -311,7 +312,7 @@ def generate_html_bytes(
     <strong>Tip:</strong> Use Ctrl+P to save as PDF
 </div>
 </body>
-"""
+""",
     )
 
-    return BytesIO(html_with_message.encode('utf-8'))
+    return BytesIO(html_with_message.encode("utf-8"))

@@ -1,4 +1,5 @@
 """Tests for attendee estimation and ID selection logic."""
+
 import pandas as pd
 
 from saisonxform.selectors import estimate_attendee_count, filter_relevant_transactions, sample_attendee_ids
@@ -24,7 +25,9 @@ class TestTransactionFiltering:
 
     def test_filter_entertainment_expenses(self):
         """Should filter transactions with 接待費 in remarks."""
-        df = pd.DataFrame({"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "科目＆No.": ["接待費", "接待費"]})
+        df = pd.DataFrame(
+            {"利用日": ["2025-10-01", "2025-10-02"], "利用金額": [15000, 8000], "科目＆No.": ["接待費", "接待費"]},
+        )
 
         result = filter_relevant_transactions(df)
 
@@ -61,6 +64,7 @@ class TestAttendeeEstimation:
     def test_estimate_within_bounds(self):
         """Should return count between min and max."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         for _ in range(20):  # Test randomness with multiple runs
@@ -70,6 +74,7 @@ class TestAttendeeEstimation:
     def test_estimate_respects_minimum(self):
         """Should never return less than minimum."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         for _ in range(20):
@@ -79,6 +84,7 @@ class TestAttendeeEstimation:
     def test_estimate_respects_maximum(self):
         """Should never return more than maximum."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         for _ in range(20):
@@ -88,6 +94,7 @@ class TestAttendeeEstimation:
     def test_estimate_default_range(self):
         """Should use default range 2-8 when not specified."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         count = estimate_attendee_count(amount=5000)
@@ -100,6 +107,7 @@ class TestAttendeeIDSampling:
     def test_sample_includes_weighted_primary_ids(self):
         """Should include ID '2' (90% weight) or ID '1' (10% weight) as primary."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         available_ids = ["1", "2", "3", "4", "5"]
@@ -321,6 +329,7 @@ class TestHybridCoreMemberSelection:
     def test_weighted_primary_then_core_filling(self):
         """Should select primary using weights (90% ID '2'), then fill from core."""
         import random
+
         random.seed(42)  # Make test deterministic
 
         available_ids = ["1", "2", "3", "4", "5", "6"]
@@ -340,6 +349,7 @@ class TestHybridCoreMemberSelection:
     def test_weighted_primary_is_id2_90_percent(self):
         """Should select ID '2' as primary ~90% of the time."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4"]
@@ -360,6 +370,7 @@ class TestHybridCoreMemberSelection:
     def test_core_exhaustion_uses_non_core(self):
         """Should use non-core members when core exhausted."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5", "6", "7", "8"]
@@ -374,13 +385,17 @@ class TestHybridCoreMemberSelection:
     def test_sequential_core_filling(self):
         """Should use core members in ID order when sequential strategy."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5", "6", "7", "8"]
         core_ids = ["3", "4", "5", "6", "7"]
 
         ids = sample_attendee_ids(
-            count=4, available_ids=available_ids, core_ids=core_ids, core_fill_strategy="sequential"
+            count=4,
+            available_ids=available_ids,
+            core_ids=core_ids,
+            core_fill_strategy="sequential",
         )
 
         non_empty = [id_str for id_str in ids if id_str]
@@ -392,6 +407,7 @@ class TestHybridCoreMemberSelection:
     def test_no_core_ids_uses_legacy_filling(self):
         """Should use legacy random filling when core_ids is None."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5"]
@@ -404,6 +420,7 @@ class TestHybridCoreMemberSelection:
     def test_empty_core_ids_uses_legacy_filling(self):
         """Should use legacy random filling when core_ids is empty."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5"]
@@ -416,14 +433,13 @@ class TestHybridCoreMemberSelection:
     def test_dict_output_with_core_members(self):
         """Should return dict format with hybrid selection."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5"]
         core_ids = ["3", "4", "5"]
 
-        result = sample_attendee_ids(
-            count=3, available_ids=available_ids, core_ids=core_ids, return_dict=True
-        )
+        result = sample_attendee_ids(count=3, available_ids=available_ids, core_ids=core_ids, return_dict=True)
 
         assert isinstance(result, dict)
         assert set(result.keys()) == {f"ID{i}" for i in range(1, 9)}
@@ -434,14 +450,13 @@ class TestHybridCoreMemberSelection:
     def test_backward_compatibility_without_core_ids(self):
         """Should work exactly as before when core_ids not provided."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5"]
 
         # Call without core_ids parameter (backward compatible)
-        ids = sample_attendee_ids(
-            count=3, available_ids=available_ids, id_2_weight=0.9, id_1_weight=0.1
-        )
+        ids = sample_attendee_ids(count=3, available_ids=available_ids, id_2_weight=0.9, id_1_weight=0.1)
 
         non_empty = [id_str for id_str in ids if id_str]
         assert len(non_empty) == 3
@@ -451,6 +466,7 @@ class TestHybridCoreMemberSelection:
     def test_primary_id_excluded_from_core_selection(self):
         """Should not include primary ID in core selection (avoid duplicates)."""
         import random
+
         random.seed(42)
 
         available_ids = ["1", "2", "3", "4", "5"]

@@ -1,4 +1,5 @@
 """Attendee estimation and ID selection logic."""
+
 import random
 
 import pandas as pd
@@ -159,7 +160,11 @@ def sample_attendee_ids(
 
                     # If still need more, use non-core members
                     if len(selected_ids) < count:
-                        non_core_ids = [id_str for id_str in available_ids if id_str not in set(valid_core_ids) and id_str != primary_id]
+                        non_core_ids = [
+                            id_str
+                            for id_str in available_ids
+                            if id_str not in set(valid_core_ids) and id_str != primary_id
+                        ]
                         additional_needed = count - len(selected_ids)
                         sample_count = min(additional_needed, len(non_core_ids))
                         if sample_count > 0:

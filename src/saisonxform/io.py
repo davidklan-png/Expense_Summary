@@ -1,4 +1,5 @@
 """CSV I/O operations with encoding detection and header parsing."""
+
 import warnings
 from pathlib import Path
 from typing import Optional
@@ -24,7 +25,7 @@ CHARDET_CONFIDENCE_THRESHOLD = 0.6
 MAX_HEADER_SCAN_ROWS = 20
 
 # Characters that indicate Excel formula injection (prefix to CSV cells)
-FORMULA_INJECTION_PREFIXES = ('=', '+', '-', '@', '\t', '\r')
+FORMULA_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 # Maximum bytes to read for encoding detection (10KB is sufficient)
 MAX_ENCODING_DETECTION_BYTES = 10240
@@ -261,9 +262,7 @@ def write_csv_utf8_bom(
     df_escaped = df_to_write.copy()
     for col in df_escaped.columns:
         if df_escaped[col].dtype == object:  # String columns
-            df_escaped[col] = df_escaped[col].apply(
-                lambda x: _escape_csv_formulas(x) if isinstance(x, str) else x
-            )
+            df_escaped[col] = df_escaped[col].apply(lambda x: _escape_csv_formulas(x) if isinstance(x, str) else x)
 
     # Write with UTF-8 BOM
     if pre_header_rows:

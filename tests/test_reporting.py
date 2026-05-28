@@ -3,7 +3,13 @@
 import pandas as pd
 import pytest
 
-from saisonxform.reporting import generate_html_report, generate_pdf_bytes, get_unique_attendees, prepare_report_context
+from saisonxform.reporting import (
+    generate_html_bytes,
+    generate_html_report,
+    generate_pdf_bytes,
+    get_unique_attendees,
+    prepare_report_context,
+)
 
 
 @pytest.fixture
@@ -74,7 +80,12 @@ class TestUniqueAttendeeExtraction:
     def test_get_unique_attendees_missing_reference(self, sample_transactions):
         """Should handle case where some IDs are not in reference."""
         partial_ref = pd.DataFrame(
-            {"ID": ["1", "2"], "Name": ["山田太郎", "佐藤花子"], "Title": ["部長", "課長"], "Company": ["ABC株式会社", "XYZ株式会社"]},
+            {
+                "ID": ["1", "2"],
+                "Name": ["山田太郎", "佐藤花子"],
+                "Title": ["部長", "課長"],
+                "Company": ["ABC株式会社", "XYZ株式会社"],
+            },
         )
 
         unique = get_unique_attendees(sample_transactions, partial_ref)
@@ -296,9 +307,7 @@ class TestPDFReportGeneration:
 
         def fake_import(name, *args, **kwargs):
             if name == "weasyprint":
-                raise OSError(
-                    "cannot load library 'libgobject-2.0-0': cannot open shared object file"
-                )
+                raise OSError("cannot load library 'libgobject-2.0-0': cannot open shared object file")
             return original_import(name, *args, **kwargs)
 
         monkeypatch.setattr("builtins.__import__", fake_import)
@@ -311,3 +320,19 @@ class TestPDFReportGeneration:
 
         assert file_ext == ".html"
         assert "東京レストラン" in report_bytes.getvalue().decode("utf-8")
+
+
+class TestHTMLBytesGeneration:
+    """Test downloadable HTML report generation."""
+
+    def test_generate_html_bytes_includes_print_tip(self, sample_transactions, attendee_reference):
+        """Should generate a downloadable HTML report with print guidance."""
+        report_bytes = generate_html_bytes(
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            source_filename="test.csv",
+        )
+
+        html = report_bytes.getvalue().decode("utf-8")
+        assert "東京レストラン" in html
+        assert "Use Ctrl+P to save as PDF" in html

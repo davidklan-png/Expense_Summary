@@ -3,11 +3,14 @@
 File upload interface with drag-and-drop support and validation.
 """
 
-
 import streamlit as st
 
 from .translations import get_text
 from .workflow_state import advance_to_next_step
+
+MAX_UPLOAD_FILES = 20
+MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024
+MAX_UPLOAD_TOTAL_BYTES = 50 * 1024 * 1024
 
 
 def render_upload_step():
@@ -50,6 +53,39 @@ def render_upload_step():
 
     # Store uploaded files in session state
     if uploaded_files:
+        total_upload_bytes = sum(uploaded_file.size for uploaded_file in uploaded_files)
+        oversized_files = [
+            uploaded_file.name for uploaded_file in uploaded_files if uploaded_file.size > MAX_UPLOAD_FILE_BYTES
+        ]
+
+        if len(uploaded_files) > MAX_UPLOAD_FILES:
+            st.error(
+                get_text(
+                    "upload.error_too_many_files",
+                    max_files=MAX_UPLOAD_FILES,
+                ),
+            )
+            return
+
+        if oversized_files:
+            st.error(
+                get_text(
+                    "upload.error_file_too_large",
+                    max_mb=MAX_UPLOAD_FILE_BYTES // (1024 * 1024),
+                    filenames=", ".join(oversized_files),
+                ),
+            )
+            return
+
+        if total_upload_bytes > MAX_UPLOAD_TOTAL_BYTES:
+            st.error(
+                get_text(
+                    "upload.error_total_too_large",
+                    max_mb=MAX_UPLOAD_TOTAL_BYTES // (1024 * 1024),
+                ),
+            )
+            return
+
         if "uploaded_files_cache" not in st.session_state:
             st.session_state["uploaded_files_cache"] = {}
 
@@ -82,7 +118,7 @@ def render_upload_step():
             if st.button(
                 get_text("upload.continue_to_process"),
                 type="primary",
-                width='stretch',
+                width="stretch",
                 key="advance_to_process",
             ):
                 advance_to_next_step()

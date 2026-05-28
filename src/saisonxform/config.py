@@ -185,16 +185,14 @@ class Config:
 
         if self.max_attendees < self.min_attendees:
             raise ValueError(
-                f"max_attendees ({self.max_attendees}) must be >= "
-                f"min_attendees ({self.min_attendees})"
+                f"max_attendees ({self.max_attendees}) must be >= " f"min_attendees ({self.min_attendees})",
             )
 
         # Validate core_fill_strategy
         valid_strategies = {"random", "sequential"}
         if self.core_fill_strategy not in valid_strategies:
             raise ValueError(
-                f"core_fill_strategy must be one of {valid_strategies}, "
-                f"got '{self.core_fill_strategy}'"
+                f"core_fill_strategy must be one of {valid_strategies}, " f"got '{self.core_fill_strategy}'",
             )
 
         # Deprecation warning for primary_id_weights
@@ -215,8 +213,7 @@ class Config:
                 import warnings
 
                 warnings.warn(
-                    f"primary_id_weights sum to {total_weight:.3f}, expected ~1.0. "
-                    f"Weights will be normalized."
+                    f"primary_id_weights sum to {total_weight:.3f}, expected ~1.0. " f"Weights will be normalized.",
                 )
 
     def _resolve_path(self, path_str: str) -> Path:
@@ -245,8 +242,7 @@ class Config:
             resolved.relative_to(self.project_root)
         except ValueError:
             raise ValueError(
-                f"Path '{path_str}' resolves outside project root. "
-                f"Resolved: {resolved}, Root: {self.project_root}"
+                f"Path '{path_str}' resolves outside project root. " f"Resolved: {resolved}, Root: {self.project_root}",
             )
 
         return resolved

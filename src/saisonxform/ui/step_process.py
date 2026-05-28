@@ -3,10 +3,10 @@
 File processing, preview, editing interface, and PDF generation.
 """
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-from ..reporting import generate_html_bytes, generate_pdf_bytes
+from ..reporting import generate_pdf_bytes
 from .translations import get_text
 from .workflow_state import WorkflowStep, can_access_step
 
@@ -31,11 +31,7 @@ def _prepare_df_for_pdf(df: pd.DataFrame) -> pd.DataFrame:
 
     # Convert 人数 back to integer
     if "人数" in pdf_df.columns:
-        pdf_df["人数"] = (
-            pd.to_numeric(pdf_df["人数"], errors="coerce")
-            .fillna(0)
-            .astype(int)
-        )
+        pdf_df["人数"] = pd.to_numeric(pdf_df["人数"], errors="coerce").fillna(0).astype(int)
 
     return pdf_df
 
@@ -172,7 +168,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                 if st.button(
                     get_text("process.create_pdf"),
                     type="primary",
-                    width='stretch',
+                    width="stretch",
                     key="create_pdf_single",
                 ):
                     try:
@@ -207,7 +203,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                             file_name=dl_filename,
                             mime=mime_type,
                             key="download_report_button",
-                            width='stretch',
+                            width="stretch",
                         )
                         st.success(success_msg)
 
@@ -227,7 +223,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     if st.button(
                         get_text("process.create_pdf"),
                         key=f"pdf_{filename}",
-                        width='stretch',
+                        width="stretch",
                     ):
                         try:
                             file_data = processed_files[filename]
@@ -257,7 +253,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                                 file_name=dl_filename,
                                 mime=mime_type,
                                 key=f"download_{filename}",
-                                width='stretch',
+                                width="stretch",
                             )
                             st.success(get_text("process.pdf_ready"))
                             st.rerun()

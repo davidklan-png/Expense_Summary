@@ -1,4 +1,5 @@
 """Streamlit Cloud entry point."""
+
 import sys
 from pathlib import Path
 

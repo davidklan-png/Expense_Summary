@@ -358,9 +358,12 @@ class TestArchiveFile:
         archive_dir = tmp_path / "Archive"
 
         # Mock both move and copy to fail
-        with patch("shutil.move", side_effect=OSError("Move failed")), patch(
-            "shutil.copy2",
-            side_effect=PermissionError("Copy failed"),
+        with (
+            patch("shutil.move", side_effect=OSError("Move failed")),
+            patch(
+                "shutil.copy2",
+                side_effect=PermissionError("Copy failed"),
+            ),
         ):
             try:
                 archive_file(input_file, archive_dir, "202510")

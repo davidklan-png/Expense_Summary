@@ -206,12 +206,18 @@ class TestDemoEndToEndWorkflow:
         # Create minimal CSV with a unique month to avoid conflicts with other tests
         # Using 202601 (far future) to avoid any archive conflicts
         sample_csv = input_dir / "202601_test.csv"
-        sample_csv.write_text("利用日,ご利用店名及び商品名,利用金額,備考\n" "2026-01-01,テスト,10000,会議費\n", encoding="utf-8-sig")
+        sample_csv.write_text(
+            "利用日,ご利用店名及び商品名,利用金額,備考\n" "2026-01-01,テスト,10000,会議費\n",
+            encoding="utf-8-sig",
+        )
 
         # Create minimal NameList with at least IDs 1 and 2 (for weighted selection)
         namelist = reference_dir / "NameList.csv"
         namelist.write_text(
-            "ID,Name,Title,Company\n" "1,テスト太郎,部長,テスト株式会社\n" "2,テスト花子,課長,テスト株式会社\n" "3,テスト一郎,主任,テスト株式会社\n",
+            "ID,Name,Title,Company\n"
+            "1,テスト太郎,部長,テスト株式会社\n"
+            "2,テスト花子,課長,テスト株式会社\n"
+            "3,テスト一郎,主任,テスト株式会社\n",
             encoding="utf-8",
         )
 

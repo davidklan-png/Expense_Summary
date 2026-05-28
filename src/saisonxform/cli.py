@@ -159,8 +159,9 @@ def run(
         ("Input", config.input_dir),
         ("Reference", config.reference_dir),
         ("Output", config.output_dir),
-        ("Archive", config.archive_dir),
     ]
+    if archive_dir is not None:
+        paths_to_validate.append(("Archive", config.archive_dir))
 
     # Skip git validation in test environments
     skip_git_validation = os.getenv("SAISONXFORM_SKIP_GIT_VALIDATION", "").lower() in ("1", "true", "yes")
@@ -187,6 +188,11 @@ def run(
 
     attendee_ref = pd.read_csv(namelist_path, encoding="utf-8")
     available_ids = attendee_ref["ID"].astype(str).tolist()
+    core_ids: list[str] | None = None
+    if "Core" in attendee_ref.columns:
+        core_ids = attendee_ref[attendee_ref["Core"] == 1]["ID"].astype(str).tolist()
+        if not core_ids:
+            core_ids = None
 
     # Find CSV files in input directory
     all_csv_files = list(config.input_dir.glob("*.csv"))
@@ -201,7 +207,7 @@ def run(
         months_to_process = get_latest_months(config.input_dir, n=DEFAULT_LATEST_MONTHS)
         if months_to_process and verbose:
             typer.echo(
-                f"No --month specified, defaulting to latest {DEFAULT_LATEST_MONTHS} months: {', '.join(months_to_process)}\n"
+                f"No --month specified, defaulting to latest {DEFAULT_LATEST_MONTHS} months: {', '.join(months_to_process)}\n",
             )
         elif not months_to_process:
             # No files with month prefixes found, process all files
@@ -334,6 +340,8 @@ def run(
                     ids_result = sample_attendee_ids(
                         count=count,
                         available_ids=available_ids,
+                        core_ids=core_ids,
+                        core_fill_strategy=config.core_fill_strategy,
                         id_2_weight=id_2_weight,
                         id_1_weight=id_1_weight,
                         return_dict=True,
@@ -342,7 +350,7 @@ def run(
                     if not isinstance(ids_result, dict):
                         raise TypeError(
                             f"Expected dict from sample_attendee_ids with return_dict=True, "
-                            f"got {type(ids_result).__name__}"
+                            f"got {type(ids_result).__name__}",
                         )
                     for i in range(1, 9):
                         col_name = f"ID{i}"
@@ -402,7 +410,7 @@ def run(
         except (ValueError, KeyError, pd.errors.ParserError, OSError) as e:
             typer.echo(f"  ✗ ERROR processing {csv_file.name}: {e}")
             typer.echo(f"     File path: {csv_file}")
-            typer.echo(f"     Step: CSV reading/processing")
+            typer.echo("     Step: CSV reading/processing")
             error_count += 1
 
             # Track processing failure for retry marker
