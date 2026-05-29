@@ -76,6 +76,8 @@ def reset_workflow():
         st.session_state["processed_files"] = {}
     if "uploaded_files_cache" in st.session_state:
         st.session_state["uploaded_files_cache"] = {}
+    if "generated_reports" in st.session_state:
+        st.session_state["generated_reports"] = {}
 
 
 def can_access_step(step: WorkflowStep) -> bool:

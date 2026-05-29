@@ -130,6 +130,7 @@ def render_upload_step():
 
         if st.button(get_text("upload.clear_cached"), type="secondary"):
             st.session_state["uploaded_files_cache"] = {}
+            st.session_state["generated_reports"] = {}
             st.rerun()
 
     # Section divider

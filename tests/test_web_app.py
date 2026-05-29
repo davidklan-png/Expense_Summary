@@ -1,6 +1,7 @@
 """Unit tests for web_app.py."""
 
 import sys
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -9,6 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from saisonxform.ui import step_process
 from web_app import initialize_session_state, load_attendee_reference, process_file
 
 
@@ -98,6 +100,26 @@ class TestProcessFile:
         processed_df = result["df"]
         assert processed_df.loc[0, "人数"] == "2"
         assert isinstance(processed_df.loc[0, "人数"], str)
+
+
+class TestReportDownloadGeneration:
+    """Test report download metadata generation."""
+
+    def test_build_report_download_returns_persistent_pdf_bytes(self, sample_processed_data, sample_attendee_ref):
+        """Should return bytes and download metadata that can be stored in session state."""
+        with (
+            patch("saisonxform.ui.step_process.st") as mock_st,
+            patch("saisonxform.ui.step_process.get_text", return_value="PDF ready"),
+            patch("saisonxform.ui.step_process.generate_pdf_bytes", return_value=(BytesIO(b"%PDF"), ".pdf")),
+        ):
+            mock_st.session_state = {"attendee_ref": sample_attendee_ref}
+
+            report = step_process._build_report_download("sample.csv", sample_processed_data)
+
+        assert report["data"] == b"%PDF"
+        assert report["file_name"] == "sample.pdf"
+        assert report["mime"] == "application/pdf"
+        assert report["label"] == "⬇️ Download PDF"
 
 
 # Fixtures

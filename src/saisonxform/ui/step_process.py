@@ -10,6 +10,15 @@ from ..reporting import generate_pdf_bytes
 from .translations import get_text
 from .workflow_state import WorkflowStep, can_access_step
 
+GENERATED_REPORTS_KEY = "generated_reports"
+
+
+def _get_generated_reports() -> dict:
+    """Return the generated report cache from Streamlit session state."""
+    if GENERATED_REPORTS_KEY not in st.session_state:
+        st.session_state[GENERATED_REPORTS_KEY] = {}
+    return st.session_state[GENERATED_REPORTS_KEY]
+
 
 def _prepare_df_for_pdf(df: pd.DataFrame) -> pd.DataFrame:
     """Convert DataFrame columns back to proper types for PDF generation.
@@ -34,6 +43,49 @@ def _prepare_df_for_pdf(df: pd.DataFrame) -> pd.DataFrame:
         pdf_df["人数"] = pd.to_numeric(pdf_df["人数"], errors="coerce").fillna(0).astype(int)
 
     return pdf_df
+
+
+def _build_report_download(filename: str, file_data: dict) -> dict:
+    """Generate report bytes and associated download metadata."""
+    pdf_df = _prepare_df_for_pdf(file_data["df"])
+
+    report_bytes, file_ext = generate_pdf_bytes(
+        transactions=pdf_df,
+        attendee_reference=st.session_state["attendee_ref"],
+        source_filename=filename,
+        pre_header_rows=file_data.get("pre_header", []),
+    )
+
+    dl_filename = filename.replace(".csv", file_ext)
+
+    if file_ext == ".pdf":
+        return {
+            "data": report_bytes.getvalue(),
+            "file_name": dl_filename,
+            "mime": "application/pdf",
+            "label": "⬇️ Download PDF",
+            "success": get_text("process.pdf_ready"),
+        }
+
+    return {
+        "data": report_bytes.getvalue(),
+        "file_name": dl_filename,
+        "mime": "text/html",
+        "label": "⬇️ Download HTML (Print to PDF)",
+        "success": "✅ HTML report ready - download it, open in a browser, then use Ctrl+P to save as PDF",
+    }
+
+
+def _render_report_download(filename: str, report: dict, key_suffix: str) -> None:
+    """Render a persistent report download button."""
+    st.download_button(
+        label=report["label"],
+        data=report["data"],
+        file_name=report["file_name"],
+        mime=report["mime"],
+        key=f"download_report_{key_suffix}_{filename}",
+        width="stretch",
+    )
 
 
 def render_process_edit_step(process_file_callback, render_editor_callback):
@@ -123,6 +175,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     if "processed_files" not in st.session_state:
                         st.session_state["processed_files"] = {}
                     st.session_state["processed_files"][filename] = result
+                    _get_generated_reports().pop(filename, None)
 
             except Exception as e:
                 failed_files.append(filename)
@@ -162,6 +215,7 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
             # Single file - immediate download
             filename = list(processed_files.keys())[0]
             file_data = processed_files[filename]
+            generated_reports = _get_generated_reports()
 
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -172,48 +226,20 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     key="create_pdf_single",
                 ):
                     try:
-                        # Prepare DataFrame for PDF (convert strings back to numeric types)
-                        pdf_df = _prepare_df_for_pdf(file_data["df"])
-
-                        # Generate PDF (falls back to HTML if system libraries missing)
-                        report_bytes, file_ext = generate_pdf_bytes(
-                            transactions=pdf_df,
-                            attendee_reference=st.session_state["attendee_ref"],
-                            source_filename=filename,
-                            pre_header_rows=file_data.get("pre_header", []),
-                        )
-
-                        # Prepare download filename
-                        dl_filename = filename.replace(".csv", file_ext)
-
-                        # Determine MIME type and button label
-                        if file_ext == ".pdf":
-                            mime_type = "application/pdf"
-                            btn_label = "⬇️ Download PDF"
-                            success_msg = get_text("process.pdf_ready")
-                        else:
-                            mime_type = "text/html"
-                            btn_label = "⬇️ Download HTML (Print to PDF)"
-                            success_msg = "✅ HTML downloaded - Open in browser and use Ctrl+P to save as PDF"
-
-                        # Trigger download
-                        st.download_button(
-                            label=btn_label,
-                            data=report_bytes.getvalue(),
-                            file_name=dl_filename,
-                            mime=mime_type,
-                            key="download_report_button",
-                            width="stretch",
-                        )
-                        st.success(success_msg)
-
+                        with st.spinner("Generating report..."):
+                            generated_reports[filename] = _build_report_download(filename, file_data)
+                        st.success(generated_reports[filename]["success"])
                     except Exception as e:
                         st.error(get_text("process.pdf_error", error=str(e)))
+
+                if filename in generated_reports:
+                    _render_report_download(filename, generated_reports[filename], "single")
 
         else:
             # Multiple files - allow individual downloads
             st.markdown("### 📄 Generate Reports")
             st.caption("Click to generate and download report for each file")
+            generated_reports = _get_generated_reports()
 
             for filename in processed_files.keys():
                 col1, col2, col3 = st.columns([3, 2, 1])
@@ -227,39 +253,15 @@ def render_process_edit_step(process_file_callback, render_editor_callback):
                     ):
                         try:
                             file_data = processed_files[filename]
-                            # Prepare DataFrame for PDF (convert strings back to numeric types)
-                            pdf_df = _prepare_df_for_pdf(file_data["df"])
-
-                            # Generate PDF (falls back to HTML if system libraries missing)
-                            report_bytes, file_ext = generate_pdf_bytes(
-                                transactions=pdf_df,
-                                attendee_reference=st.session_state["attendee_ref"],
-                                source_filename=filename,
-                                pre_header_rows=file_data.get("pre_header", []),
-                            )
-
-                            dl_filename = filename.replace(".csv", file_ext)
-
-                            if file_ext == ".pdf":
-                                mime_type = "application/pdf"
-                                btn_label = f"⬇️ {dl_filename}"
-                            else:
-                                mime_type = "text/html"
-                                btn_label = f"⬇️ {dl_filename} (Print to PDF)"
-
-                            st.download_button(
-                                label=btn_label,
-                                data=report_bytes.getvalue(),
-                                file_name=dl_filename,
-                                mime=mime_type,
-                                key=f"download_{filename}",
-                                width="stretch",
-                            )
-                            st.success(get_text("process.pdf_ready"))
-                            st.rerun()
+                            with st.spinner("Generating report..."):
+                                generated_reports[filename] = _build_report_download(filename, file_data)
+                            st.success(generated_reports[filename]["success"])
 
                         except Exception as e:
                             st.error(get_text("process.pdf_error", error=str(e)))
+                with col3:
+                    if filename in generated_reports:
+                        _render_report_download(filename, generated_reports[filename], "multi")
 
     # Section divider
     st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)

@@ -56,6 +56,8 @@ def initialize_session_state() -> None:
         st.session_state["processed_files"] = {}
     if "uploaded_files_cache" not in st.session_state:
         st.session_state["uploaded_files_cache"] = {}
+    if "generated_reports" not in st.session_state:
+        st.session_state["generated_reports"] = {}
 
 
 def load_attendee_reference(reference_path: Path) -> Optional[pd.DataFrame]:
@@ -265,6 +267,8 @@ def render_editor(filename: str) -> None:
             # Update only the edited rows in the full dataframe
             df.update(edited_df)
             st.session_state["processed_files"][filename]["df"] = df.copy()
+
+        st.session_state.get("generated_reports", {}).pop(filename, None)
 
         # Recalculate unique attendees
         st.session_state["processed_files"][filename]["unique_attendees"] = get_unique_attendees(
