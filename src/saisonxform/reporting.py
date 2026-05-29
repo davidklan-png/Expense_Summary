@@ -17,8 +17,43 @@ PDF_SYSTEM_DEPENDENCY_ERROR_MARKERS = (
     "pango-1.0",
 )
 
+REPORT_COLUMN_ORDER = [
+    "利用日",
+    "ご利用店名及び商品名",
+    "支払区分名称",
+    "利用金額",
+    "科目＆No.",
+    "人数",
+    "ID1",
+    "ID2",
+    "ID3",
+    "ID4",
+    "ID5",
+    "ID6",
+    "ID7",
+    "ID8",
+    "備考",
+]
 
-def _numeric_sort_key(id_value: str) -> int | float:
+
+def _normalize_id_value(id_value: object) -> str:
+    """Normalize attendee IDs for matching and display.
+
+    CSV editors and pandas can round-trip blank ID columns as floats. This
+    keeps IDs such as 1.0 aligned with NameList ID "1".
+    """
+    if id_value is None or pd.isna(id_value):
+        return ""
+
+    id_text = str(id_value).strip()
+    if id_text.lower() == "nan":
+        return ""
+    if id_text.endswith(".0") and id_text[:-2].isdigit():
+        return id_text[:-2]
+    return id_text
+
+
+def _numeric_sort_key(id_value: object) -> int | float:
     """Convert ID to numeric sort key, placing non-numeric IDs at end.
 
     Args:
@@ -27,13 +62,37 @@ def _numeric_sort_key(id_value: str) -> int | float:
     Returns:
         Integer value for numeric IDs, infinity for non-numeric
     """
-    return int(id_value) if id_value.isdigit() else float("inf")
+    id_text = _normalize_id_value(id_value)
+    return int(id_text) if id_text.isdigit() else float("inf")
 
 
 def _is_pdf_system_dependency_error(error: BaseException) -> bool:
     """Return True when PDF generation failed because native libraries are missing."""
     error_text = str(error).lower()
     return any(marker in error_text for marker in PDF_SYSTEM_DEPENDENCY_ERROR_MARKERS)
+
+
+def _prepare_report_transactions(transactions: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Return transactions with stable PDF display column names and ordering."""
+    transactions_copy = transactions.copy()
+
+    if "人数" not in transactions_copy.columns and "出席者" in transactions_copy.columns:
+        transactions_copy = transactions_copy.rename(columns={"出席者": "人数"})
+
+    ordered_columns = [column for column in REPORT_COLUMN_ORDER if column in transactions_copy.columns]
+    extra_columns = [
+        column for column in transactions_copy.columns if column not in ordered_columns and column not in {"出席者", "備考"}
+    ]
+
+    if "備考" in transactions_copy.columns and "備考" not in ordered_columns:
+        ordered_columns.append("備考")
+
+    if ordered_columns and ordered_columns[-1] == "備考":
+        column_names = ordered_columns[:-1] + extra_columns + ["備考"]
+    else:
+        column_names = ordered_columns + extra_columns
+
+    return transactions_copy[column_names], column_names
 
 
 def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.DataFrame) -> pd.DataFrame:
@@ -59,10 +118,9 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
     # Stack all ID columns into a single series
     all_ids = pd.concat([transactions[col] for col in existing_id_cols], ignore_index=True)
 
-    # Filter out empty strings, NaN values, and ensure string type
-    # Convert to string first to handle any numeric or NaN values
-    all_ids = all_ids.astype(str)
-    unique_ids = all_ids[(all_ids != "") & (all_ids != "nan")].unique()
+    # Normalize IDs first so numeric CSV round trips (1.0) still match NameList ID "1".
+    all_ids = all_ids.map(_normalize_id_value)
+    unique_ids = all_ids[all_ids != ""].unique()
 
     if len(unique_ids) == 0:
         return pd.DataFrame(columns=["ID", "Name", "Title", "Company"])
@@ -72,7 +130,7 @@ def get_unique_attendees(transactions: pd.DataFrame, attendee_reference: pd.Data
 
     # Ensure ID column is string type in reference
     attendee_ref_copy = attendee_reference.copy()
-    attendee_ref_copy["ID"] = attendee_ref_copy["ID"].astype(str)
+    attendee_ref_copy["ID"] = attendee_ref_copy["ID"].map(_normalize_id_value)
 
     # Join with reference data (explicitly exclude Core column from output)
     reference_columns = ["ID", "Name", "Title", "Company"]
@@ -109,8 +167,10 @@ def prepare_report_context(
     # Get unique attendees
     unique_attendees = get_unique_attendees(transactions, attendee_reference)
 
+    # Normalize report-specific column names and order before rendering.
+    transactions_copy, column_names = _prepare_report_transactions(transactions)
+
     # Convert Int64 columns to object type to allow fillna with empty string
-    transactions_copy = transactions.copy()
     # Use select_dtypes for efficient column selection
     int64_cols = transactions_copy.select_dtypes(include=["Int64", "Int32", "Int16", "Int8"]).columns
     for col in int64_cols:
@@ -125,9 +185,6 @@ def prepare_report_context(
     # Convert DataFrames to list of dicts for template
     transactions_list = transactions_clean.to_dict("records")
     attendees_list = attendees_clean.to_dict("records")
-
-    # Get column names from DataFrame (preserves order)
-    column_names = transactions.columns.tolist()
 
     return {
         "filename": filename,

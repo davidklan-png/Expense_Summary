@@ -67,6 +67,21 @@ class TestUniqueAttendeeExtraction:
         id_values = [int(id_str) for id_str in unique["ID"]]
         assert id_values == sorted(id_values)
 
+    def test_get_unique_attendees_normalizes_float_ids(self, attendee_reference):
+        """Should match attendee IDs when CSV round trips IDs as floats."""
+        transactions = pd.DataFrame(
+            {
+                "ID1": [1.0],
+                "ID2": [2.0],
+                "ID3": [float("nan")],
+            },
+        )
+
+        unique = get_unique_attendees(transactions, attendee_reference)
+
+        assert unique["ID"].tolist() == ["1", "2"]
+        assert unique["Name"].tolist() == ["山田太郎", "佐藤花子"]
+
     def test_get_unique_attendees_empty_transactions(self, attendee_reference):
         """Should return empty DataFrame for empty transactions."""
         empty_df = pd.DataFrame(
@@ -159,6 +174,38 @@ class TestReportContextPreparation:
         assert isinstance(context["unique_attendees"][0], dict)
         assert "Name" in context["unique_attendees"][0]
 
+    def test_prepare_context_uses_required_pdf_column_order(self, attendee_reference):
+        """Should render attendee columns before remarks even if input order differs."""
+        transactions = pd.DataFrame(
+            {
+                "利用日": ["2025-10-01"],
+                "ご利用店名及び商品名": ["東京レストラン"],
+                "利用金額": [15000],
+                "備考": ["memo"],
+                "出席者": [2],
+                "ID1": [1.0],
+                "ID2": [2.0],
+            },
+        )
+
+        context = prepare_report_context(
+            transactions=transactions,
+            attendee_reference=attendee_reference,
+            filename="test.csv",
+            pre_header_rows=[],
+        )
+
+        assert context["column_names"] == [
+            "利用日",
+            "ご利用店名及び商品名",
+            "利用金額",
+            "人数",
+            "ID1",
+            "ID2",
+            "備考",
+        ]
+        assert context["transactions"][0]["人数"] == 2
+
 
 class TestHTMLReportGeneration:
     """Test complete HTML report generation."""
@@ -210,6 +257,24 @@ class TestHTMLReportGeneration:
         # Check for attendee details
         assert "山田太郎" in content
         assert "佐藤花子" in content
+
+    def test_generate_html_uses_compact_pdf_layout(self, tmp_path, sample_transactions, attendee_reference):
+        """Should include print layout rules that keep wide transaction rows inside the PDF page."""
+        output_file = tmp_path / "report.html"
+
+        generate_html_report(
+            transactions=sample_transactions,
+            attendee_reference=attendee_reference,
+            output_path=output_file,
+            source_filename="test.csv",
+        )
+
+        content = output_file.read_text(encoding="utf-8")
+
+        assert "size: A4 portrait" in content
+        assert "table-layout: fixed" in content
+        assert "overflow-wrap: anywhere" in content
+        assert "participant-id-col" in content
 
     def test_generate_html_handles_duplicate_filenames(self, tmp_path, sample_transactions, attendee_reference):
         """Should append suffix for duplicate filenames."""

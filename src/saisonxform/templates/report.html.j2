@@ -5,18 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ report_title }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm 7mm;
+        }
         body {
-            font-family: 'Arial', 'Meiryo', sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Noto Sans CJK JP', 'Meiryo', 'Arial', sans-serif;
+            margin: 0;
+            background-color: #fff;
+            color: #222;
+            font-size: 8px;
+            line-height: 1.35;
         }
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            width: 100%;
+            margin: 0;
             background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
         }
         h1 {
             color: #333;
@@ -25,92 +32,132 @@
         }
         h2 {
             color: #0066cc;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-        .metadata {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
+            margin-top: 8mm;
+            margin-bottom: 3mm;
             font-size: 13px;
         }
+        .metadata {
+            background-color: #f7f7f7;
+            padding: 7mm 4mm;
+            min-height: 44mm;
+            margin-bottom: 3mm;
+            white-space: pre-wrap;
+            font-family: 'Noto Sans CJK JP', 'Meiryo', 'Arial', sans-serif;
+            font-size: 7px;
+        }
         .metadata p {
-            margin: 5px 0;
+            margin: 0 0 8mm 0;
             color: #666;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 0;
+            font-size: 7px;
+            table-layout: fixed;
+            page-break-inside: auto;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 0.5px solid #cfcfcf;
+            padding: 3px 4px;
             text-align: left;
+            vertical-align: middle;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-break: strict;
+            white-space: normal;
         }
         th {
             background-color: #0066cc;
             color: white;
             font-weight: bold;
+            font-size: 7px;
         }
         th.attendee-group-header {
             background-color: #0052a3;
             text-align: center;
-            font-size: 13px;
-            padding: 8px;
+            font-size: 6.5px;
+            padding: 3px;
         }
         th.attendee-subheader {
             background-color: #0066cc;
             text-align: center;
-            font-size: 11px;
-            padding: 6px;
+            font-size: 6px;
+            padding: 3px;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tr {
+            page-break-inside: avoid;
         }
         tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tbody tr:hover {
-            background-color: #f0f0f0;
+            background-color: #fafafa;
         }
         .amount {
             text-align: right;
-            font-family: 'Courier New', monospace;
+            font-family: 'Noto Sans Mono CJK JP', 'Courier New', monospace;
+            white-space: nowrap;
+        }
+        .num,
+        .id-value {
+            text-align: center;
+            white-space: nowrap;
+        }
+        .date-col {
+            width: 7%;
+        }
+        .item-col {
+            width: 31%;
+        }
+        .payment-col {
+            width: 7%;
+        }
+        .amount-col {
+            width: 7%;
+        }
+        .subject-col {
+            width: 20%;
+        }
+        .count-col {
+            width: 3%;
+        }
+        .participant-id-col {
+            width: 2.25%;
+        }
+        .notes-col {
+            width: 7%;
         }
         .attendee-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 0;
+            font-size: 8px;
+            table-layout: fixed;
         }
         .attendee-table th {
             background-color: #0066cc;
             color: white;
             font-weight: bold;
-            padding: 10px;
+            padding: 4px;
             text-align: left;
         }
         .attendee-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 0.5px solid #cfcfcf;
+            padding: 4px;
             text-align: left;
         }
         .attendee-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .attendee-table tbody tr:hover {
-            background-color: #f0f0f0;
+            background-color: #fafafa;
         }
         .attendee-table .id-col {
             font-weight: bold;
             color: #0066cc;
-            width: 80px;
+            width: 8%;
         }
         .empty-state {
             text-align: center;
-            padding: 40px;
+            padding: 20px;
             color: #999;
         }
     </style>
@@ -130,6 +177,29 @@
 
         {% if transactions and transactions|length > 0 %}
         <table>
+            <colgroup>
+                {% for column in column_names %}
+                    {% if column == '利用日' %}
+                    <col class="date-col">
+                    {% elif column == 'ご利用店名及び商品名' %}
+                    <col class="item-col">
+                    {% elif column == '支払区分名称' %}
+                    <col class="payment-col">
+                    {% elif column == '利用金額' %}
+                    <col class="amount-col">
+                    {% elif column == '科目＆No.' %}
+                    <col class="subject-col">
+                    {% elif column == '人数' %}
+                    <col class="count-col">
+                    {% elif column in ['ID1', 'ID2', 'ID3', 'ID4', 'ID5', 'ID6', 'ID7', 'ID8'] %}
+                    <col class="participant-id-col">
+                    {% elif column == '備考' %}
+                    <col class="notes-col">
+                    {% else %}
+                    <col>
+                    {% endif %}
+                {% endfor %}
+            </colgroup>
             <thead>
                 {# Row 1: Top-level groupings #}
                 <tr>
@@ -162,10 +232,13 @@
                     {% elif column == '人数' %}
                     {% set value = transaction[column] %}
                     {% if value and value != '' and value != 'nan' and value is not none %}
-                    <td>{{ value|int }}</td>
+                    <td class="num">{{ value|int }}</td>
                     {% else %}
-                    <td></td>
+                    <td class="num"></td>
                     {% endif %}
+                    {% elif column in ['ID1', 'ID2', 'ID3', 'ID4', 'ID5', 'ID6', 'ID7', 'ID8'] %}
+                    {% set value = transaction[column] %}
+                    <td class="id-value">{{ '' if (value != value or value is none or value == '' or value == 'nan') else value }}</td>
                     {% else %}
                     {% set value = transaction[column] %}
                     <td>{{ '' if (value != value or value is none or value == '' or value == 'nan') else value }}</td>
